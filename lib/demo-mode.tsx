@@ -200,7 +200,11 @@ export function DemoModeToggle() {
     if (typeof window !== "undefined") {
       const savedDemoMode = localStorage.getItem("demoMode") === "true"
       setIsDemo(savedDemoMode)
-      demoMode.isDemoMode = savedDemoMode
+      if (savedDemoMode) {
+        demoMode.enableDemoMode()
+      } else {
+        demoMode.disableDemoMode()
+      }
     }
   }, [])
 

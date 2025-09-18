@@ -55,7 +55,7 @@ export default function FunderOnboardingPage() {
     applicationProcess: "",
   })
 
-  const totalSteps = 3
+  const totalSteps = 4
   const progress = (currentStep / totalSteps) * 100
 
   const handleInputChange = (field: string, value: string | string[]) => {
@@ -301,26 +301,66 @@ export default function FunderOnboardingPage() {
                 rows={4}
               />
             </div>
+          </div>
+        )
 
-            <div className="bg-muted/50 p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">Profile Summary</h3>
-              <div className="space-y-1 text-sm text-muted-foreground">
-                <p>
-                  <strong>Organization:</strong> {formData.organizationName || "Not specified"}
-                </p>
-                <p>
-                  <strong>Type:</strong> {formData.organizationType || "Not specified"}
-                </p>
-                <p>
-                  <strong>Location:</strong> {formData.location || "Not specified"}
-                </p>
-                <p>
-                  <strong>Focus Areas:</strong>{" "}
-                  {formData.focusAreas.length > 0 ? formData.focusAreas.join(", ") : "None selected"}
-                </p>
-                <p>
-                  <strong>Typical Grant Size:</strong> {formData.typicalGrantSize || "Not specified"}
-                </p>
+      case 4:
+        return (
+          <div className="space-y-4">
+            <div className="bg-muted/50 p-6 rounded-lg">
+              <h3 className="font-semibold mb-4 text-lg">Profile Summary</h3>
+              <div className="space-y-4 text-sm">
+                <div>
+                  <strong className="text-foreground">Organization:</strong>
+                  <p className="text-muted-foreground mt-1">{formData.organizationName || "Not specified"}</p>
+                </div>
+                <div>
+                  <strong className="text-foreground">Type:</strong>
+                  <p className="text-muted-foreground mt-1">{formData.organizationType || "Not specified"}</p>
+                </div>
+                <div>
+                  <strong className="text-foreground">Location:</strong>
+                  <p className="text-muted-foreground mt-1">{formData.location || "Not specified"}</p>
+                </div>
+                <div>
+                  <strong className="text-foreground">Contact Person:</strong>
+                  <p className="text-muted-foreground mt-1">{formData.contactPerson || "Not specified"}</p>
+                </div>
+                <div>
+                  <strong className="text-foreground">Contact Email:</strong>
+                  <p className="text-muted-foreground mt-1">{formData.contactEmail || "Not specified"}</p>
+                </div>
+                <div>
+                  <strong className="text-foreground">Focus Areas:</strong>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {formData.focusAreas.length > 0 ? (
+                      formData.focusAreas.map((area) => (
+                        <span
+                          key={area}
+                          className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-dashed border-blue-200"
+                        >
+                          {area}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-muted-foreground">None selected</span>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <strong className="text-foreground">Typical Grant Size:</strong>
+                  <p className="text-muted-foreground mt-1">{formData.typicalGrantSize || "Not specified"}</p>
+                </div>
+                <div>
+                  <strong className="text-foreground">Annual Budget:</strong>
+                  <p className="text-muted-foreground mt-1">{formData.annualBudget || "Not specified"}</p>
+                </div>
+                {formData.applicationProcess && (
+                  <div>
+                    <strong className="text-foreground">Application Process:</strong>
+                    <p className="text-muted-foreground mt-1">{formData.applicationProcess}</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -339,6 +379,8 @@ export default function FunderOnboardingPage() {
         return formData.contactPerson && formData.contactEmail && formData.focusAreas.length > 0
       case 3:
         return formData.typicalGrantSize
+      case 4:
+        return true // Review step is always valid
       default:
         return false
     }
@@ -375,11 +417,13 @@ export default function FunderOnboardingPage() {
               {currentStep === 1 && "Organization Information"}
               {currentStep === 2 && "Contact & Focus Areas"}
               {currentStep === 3 && "Funding Details"}
+              {currentStep === 4 && "Review Profile"}
             </CardTitle>
             <CardDescription>
               {currentStep === 1 && "Tell us about your organization and mission"}
               {currentStep === 2 && "Provide contact details and funding focus areas"}
-              {currentStep === 3 && "Set your funding parameters and review profile"}
+              {currentStep === 3 && "Set your funding parameters and application process"}
+              {currentStep === 4 && "Review your complete profile before finalizing"}
             </CardDescription>
           </CardHeader>
           <CardContent>
