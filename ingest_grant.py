@@ -2,7 +2,7 @@
 import os
 import json
 import uuid
-from utils import s3, call_bedrock_generate, index_to_opensearch, textract_extract_text_from_s3
+from utils import get_s3_client, call_bedrock_generate, index_to_opensearch, textract_extract_text_from_s3
 from bedrock_prompts import GRANT_SUMMARIZER_PROMPT
 
 S3_BUCKET = os.environ.get("S3_BUCKET")
@@ -66,8 +66,8 @@ def lambda_handler(event, context):
         }
 
     # store into DynamoDB table 'Grants'
-    import boto3
-    dynamodb = boto3.resource("dynamodb")
+    from utils import get_dynamodb_resource
+    dynamodb = get_dynamodb_resource()
     table = dynamodb.Table("Grants")
     grant_id = parsed.get("grant_id") or f"grant_{uuid.uuid4().hex[:8]}"
     item = {

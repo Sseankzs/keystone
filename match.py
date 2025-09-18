@@ -98,7 +98,8 @@ def lambda_handler(event, context):
     results = sorted(results, key=lambda r: r["score"], reverse=True)[:3]
 
     # store matches in DynamoDB
-    ddb = boto3.resource("dynamodb")
+    from utils import get_dynamodb_resource
+    ddb = get_dynamodb_resource()
     table = ddb.Table("Matches")
     for r in results:
         table.put_item(Item={
