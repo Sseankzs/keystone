@@ -13,7 +13,9 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { 
   Building2, Users, TrendingUp, Eye, MessageCircle, Plus, Settings, BarChart3, FileText,
   Search, Filter, Download, MoreHorizontal, Calendar, DollarSign, Star, Clock, CheckCircle, XCircle,
-  ArrowUpDown, ArrowUp, ArrowDown
+  ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, Minus, Loader2,
+  CircleCheck,
+  Loader
 } from "lucide-react"
 
 // Mock data
@@ -244,9 +246,9 @@ export default function FunderDashboard() {
       }
       
       if (sortOrder === "asc") {
-        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0
+        return (aValue as any) < (bValue as any) ? -1 : (aValue as any) > (bValue as any) ? 1 : 0
       } else {
-        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0
+        return (aValue as any) > (bValue as any) ? -1 : (aValue as any) < (bValue as any) ? 1 : 0
       }
     })
 
@@ -385,84 +387,42 @@ export default function FunderDashboard() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Grants</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{STATS.totalGrants}</div>
-              <div className="flex items-center text-sm text-muted-foreground">
-                <FileText className="h-4 w-4 mr-1" />
-                All time
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
+          <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="text-xs text-gray-500 font-medium mb-1">Total Grants</div>
+            <div className="text-xl font-semibold text-gray-900 mb-1">{STATS.totalGrants}</div>
+            <div className="text-xs text-gray-400">All time</div>
+          </div>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Active Grants</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{STATS.activeGrants}</div>
-              <div className="flex items-center text-sm text-muted-foreground">
-                <TrendingUp className="h-4 w-4 mr-1" />
-                Currently open
-              </div>
-            </CardContent>
-          </Card>
+          <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="text-xs text-gray-500 font-medium mb-1">Active Grants</div>
+            <div className="text-xl font-semibold text-gray-900 mb-1">{STATS.activeGrants}</div>
+            <div className="text-xs text-gray-400">Currently open</div>
+          </div>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Applications</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{STATS.totalApplications}</div>
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Users className="h-4 w-4 mr-1" />
-                Total received
-              </div>
-            </CardContent>
-          </Card>
+          <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="text-xs text-gray-500 font-medium mb-1">Applications</div>
+            <div className="text-xl font-semibold text-gray-900 mb-1">{STATS.totalApplications}</div>
+            <div className="text-xs text-gray-400">Total received</div>
+          </div>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Approval Rate</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{STATS.approvalRate}%</div>
-              <div className="flex items-center text-sm text-muted-foreground">
-                <BarChart3 className="h-4 w-4 mr-1" />
-                Last 6 months
-              </div>
-            </CardContent>
-          </Card>
+          <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="text-xs text-gray-500 font-medium mb-1">Approval Rate</div>
+            <div className="text-xl font-semibold text-gray-900 mb-1">{STATS.approvalRate}%</div>
+            <div className="text-xs text-gray-400">Last 6 months</div>
+          </div>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Funded</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{STATS.totalFunded}</div>
-              <div className="flex items-center text-sm text-muted-foreground">
-                <TrendingUp className="h-4 w-4 mr-1" />
-                This year
-              </div>
-            </CardContent>
-          </Card>
+          <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="text-xs text-gray-500 font-medium mb-1">Total Funded</div>
+            <div className="text-xl font-semibold text-gray-900 mb-1">{STATS.totalFunded}</div>
+            <div className="text-xs text-gray-400">This year</div>
+          </div>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Avg Processing</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{STATS.avgProcessingTime}</div>
-              <div className="flex items-center text-sm text-muted-foreground">
-                <TrendingUp className="h-4 w-4 mr-1" />
-                Review time
-              </div>
-            </CardContent>
-          </Card>
+          <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="text-xs text-gray-500 font-medium mb-1">Avg Processing</div>
+            <div className="text-xl font-semibold text-gray-900 mb-1">{STATS.avgProcessingTime}</div>
+            <div className="text-xs text-gray-400">Review time</div>
+          </div>
         </div>
 
         {/* Main Content Tabs */}
@@ -716,11 +676,11 @@ export default function FunderDashboard() {
                           </th>
                           <th 
                             className="p-4 font-medium cursor-pointer hover:bg-muted/50 transition-colors select-none"
-                            onClick={() => handleSort("amount")}
+                            onClick={() => handleSort("submittedDate")}
                           >
                             <div className="flex items-center gap-2">
-                              Amount
-                              {getSortIcon("amount")}
+                              Submitted
+                              {getSortIcon("submittedDate")}
                             </div>
                           </th>
                           <th 
@@ -752,11 +712,11 @@ export default function FunderDashboard() {
                           </th>
                           <th 
                             className="p-4 font-medium cursor-pointer hover:bg-muted/50 transition-colors select-none"
-                            onClick={() => handleSort("submittedDate")}
+                            onClick={() => handleSort("amount")}
                           >
                             <div className="flex items-center gap-2">
-                              Submitted
-                              {getSortIcon("submittedDate")}
+                              Amount
+                              {getSortIcon("amount")}
                             </div>
                           </th>
                           <th className="p-4 font-medium">Actions</th>
@@ -782,31 +742,84 @@ export default function FunderDashboard() {
                               <div className="text-sm">{app.grantTitle}</div>
                             </td>
                             <td className="p-4">
-                              <div className="font-medium text-foreground">{app.amount}</div>
+                              <div className="text-sm">{new Date(app.submittedDate).toLocaleDateString()}</div>
+                              {app.reviewer && (
+                                <div className="text-xs text-muted-foreground">by {app.reviewer}</div>
+                              )}
                             </td>
-                            <td className="p-4">
-                              <Badge className={`${getStatusColor(app.status)} whitespace-nowrap`}>{app.status}</Badge>
-                            </td>
+                              <td className="p-4">
+                                <div className={`inline-flex items-center gap-1 px-1.5 py-1 rounded-md text-sm font-medium justify-center ${
+                                  app.status === 'Approved' ? 'bg-green-100 text-green-600 min-w-[100px]' :
+                                  app.status === 'Rejected' ? 'bg-red-100 text-red-600 min-w-[100px]' :
+                                  app.status === 'Under Review' ? 'bg-blue-100 text-blue-600 min-w-[120px]' :
+                                  app.status === 'Pending Review' ? 'bg-orange-100 text-orange-600 min-w-[155px]' :
+                                  'bg-gray-100 text-gray-600 min-w-[100px]'
+                                }`}>
+                                  {app.status === 'Approved' && <CircleCheck className="w-4 h-4" />}
+                                  {app.status === 'Rejected' && <XCircle className="w-4 h-4" />}
+                                  {app.status === 'Under Review' && <Loader className="w-4 h-4" />}
+                                  {app.status === 'Pending Review' && <AlertTriangle className="w-4 h-4" />}
+                                  {app.status !== 'Approved' && app.status !== 'Rejected' && app.status !== 'Under Review' && app.status !== 'Pending Review' && <Minus className="w-4 h-4" />}
+                                  <span>{app.status}</span>
+                                </div>
+                              </td>
                             <td className="p-4">
                               {app.score > 0 ? (
-                                <div className="flex items-center gap-1">
-                                  <Star className="h-4 w-4 text-yellow-500" />
-                                  <span className="font-medium">{app.score}%</span>
+                                <div className="flex justify-center">
+                                  <div className="relative w-12 h-12">
+                                    <svg className="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
+                                      <path
+                                        className="text-gray-200"
+                                        stroke="currentColor"
+                                        strokeWidth="4"
+                                        fill="none"
+                                        d="M18 2.0845
+                                          a 15.9155 15.9155 0 0 1 0 31.831
+                                          a 15.9155 15.9155 0 0 1 0 -31.831"
+                                      />
+                                      <path
+                                        className={`${
+                                          app.score >= 80 ? 'text-green-500' :
+                                          app.score >= 60 ? 'text-yellow-400' :
+                                          'text-red-500'
+                                        }`}
+                                        stroke="currentColor"
+                                        strokeWidth="4"
+                                        fill="none"
+                                        strokeLinecap="round"
+                                        strokeDasharray={`${app.score}, 100`}
+                                        d="M18 2.0845
+                                          a 15.9155 15.9155 0 0 1 0 31.831
+                                          a 15.9155 15.9155 0 0 1 0 -31.831"
+                                      />
+                                    </svg>
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                      <span className="text-xs font-semibold text-gray-700">{app.score}%</span>
+                                    </div>
+                                  </div>
                                 </div>
                               ) : (
                                 <span className="text-muted-foreground">-</span>
                               )}
                             </td>
                             <td className="p-4">
-                              <Badge variant="outline" className={getPriorityColor(app.priority)}>
-                                {app.priority}
-                              </Badge>
+                              <div className="flex items-center gap-1">
+                                <div className={`w-1 h-4 rounded-lg ${
+                                  app.priority === 'High' ? 'bg-red-600' :
+                                  app.priority === 'Medium' ? 'bg-yellow-600' :
+                                  'bg-green-600'
+                                }`} />
+                                <span className={`w-18 px-1.5 py-0.3 rounded text-sm font-medium text-left ${
+                                  app.priority === 'High' ? 'bg-red-100 text-red-600' :
+                                  app.priority === 'Medium' ? 'bg-yellow-100 text-yellow-700' :
+                                  'bg-green-100 text-green-700'
+                                }`}>
+                                  {app.priority}
+                                </span>
+                              </div>
                             </td>
                             <td className="p-4">
-                              <div className="text-sm">{new Date(app.submittedDate).toLocaleDateString()}</div>
-                              {app.reviewer && (
-                                <div className="text-xs text-muted-foreground">by {app.reviewer}</div>
-                              )}
+                              <div className="font-medium text-foreground">{app.amount}</div>
                             </td>
                             <td className="p-4">
                               <div className="flex gap-1">
