@@ -10,6 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import {
   Building2,
+  Building,
   Home,
   Search,
   FileText,
@@ -30,53 +31,22 @@ interface SidebarLayoutProps {
 
 const SME_NAVIGATION = [
   {
-    title: "Overview",
-    items: [
-      { name: "Dashboard", href: "/sme/dashboard", icon: Home },
-      { name: "Find Grants", href: "/sme/goal-input", icon: Search },
-      { name: "Results", href: "/sme/results", icon: FileText },
-      { name: "Grant Assistant", href: "/sme/grant-assistant", icon: Target },
-    ],
-  },
-  {
-    title: "Profile",
+    title: "SME Flow",
     items: [
       { name: "Onboarding", href: "/sme/onboarding", icon: User },
-    ],
-  },
-  {
-    title: "Support",
-    items: [{ name: "Chat Support", href: "/sme/chat/1", icon: MessageCircle }],
-  },
-  {
-    title: "Auth (Dev)",
-    items: [
-      { name: "Login", href: "/login", icon: User },
-      { name: "Register", href: "/register", icon: User },
+      { name: "Dashboard", href: "/sme/dashboard", icon: Home },
+      { name: "Grant Details", href: "/sme/grant/1", icon: Target },
     ],
   },
 ]
 
 const FUNDER_NAVIGATION = [
   {
-    title: "Overview",
-    items: [
-      { name: "Dashboard", href: "/funder/dashboard", icon: Home },
-      //{ name: "Upload Document", href: "/funder/upload-document", icon: Upload },
-      { name: "Grant Management", href: "/funder/upload", icon: FileText },
-    ],
-  },
-  {
-    title: "Profile",
+    title: "Funder Flow",
     items: [
       { name: "Onboarding", href: "/funder/onboarding", icon: User },
-    ],
-  },
-  {
-    title: "Auth (Dev)",
-    items: [
-      { name: "Login", href: "/login", icon: User },
-      { name: "Register", href: "/register", icon: User },
+      { name: "Dashboard", href: "/funder/dashboard", icon: Home },
+      { name: "Grant Details", href: "/funder/grant/1", icon: FileText },
     ],
   },
 ]
@@ -91,28 +61,28 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
   const navigation = isFunder ? FUNDER_NAVIGATION : SME_NAVIGATION
 
   const SidebarContent = () => (
-    <div className="flex h-full flex-col bg-white">
+    <div className="flex h-full flex-col bg-gray-50 border-r border-gray-200">
       {/* Header */}
-      <div className="flex h-14 items-center px-4">
+      <div className="flex h-14 items-center px-4 bg-white border-b border-gray-200">
         <Link href="/role-selector" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-blue-500 shadow-sm">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 shadow-sm">
             <Building2 className="h-4 w-4 text-white" />
           </div>
-          {!collapsed && <span className="text-base font-medium text-gray-900">FundConnect</span>}
+          {!collapsed && <span className="text-lg font-semibold text-gray-900">FundConnect</span>}
         </Link>
       </div>
 
       {/* Navigation */}
-      <ScrollArea className="flex-1 px-2 py-3">
-        <div className="space-y-8">
+      <ScrollArea className="flex-1 px-3 py-4">
+        <div className="space-y-6">
           {navigation.map((section) => (
             <div key={section.title}>
               {!collapsed && (
-                <h3 className="mb-3 px-2 text-xs font-medium text-gray-500 tracking-wide">
+                <h3 className="mb-3 px-3 text-xs font-semibold text-gray-500 tracking-wider uppercase">
                   {section.title}
                 </h3>
               )}
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 {section.items.map((item) => {
                   const Icon = item.icon
                   const isActive = pathname === item.href
@@ -120,15 +90,15 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
                     <Link key={item.href} href={item.href}>
                       <div
                         className={cn(
-                          "flex items-center space-x-3 rounded-md px-2.5 py-2 text-sm transition-all duration-150 group",
-                          isActive 
-                            ? "bg-gray-200 text-gray-900 shadow-sm" 
-                            : "text-gray-700 hover:bg-gray-100 hover:text-gray-900",
+                          "flex items-center space-x-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-200 group",
+                          isActive
+                            ? "bg-blue-100 text-blue-900 shadow-sm border border-blue-200"
+                            : "text-gray-700 hover:bg-white hover:text-gray-900 hover:shadow-sm border border-transparent hover:border-gray-200",
                         )}
                       >
                         <Icon className={cn(
-                          "h-4 w-4 flex-shrink-0 transition-colors",
-                          isActive ? "text-gray-700" : "text-gray-500 group-hover:text-gray-700"
+                          "h-5 w-5 flex-shrink-0 transition-colors",
+                          isActive ? "text-blue-600" : "text-gray-500 group-hover:text-gray-700"
                         )} />
                         {!collapsed && <span className="font-medium">{item.name}</span>}
                       </div>
@@ -142,10 +112,10 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
       </ScrollArea>
 
       {/* Footer */}
-      <div className="p-3 bg-white">
+      <div className="p-4 bg-white border-t border-gray-200">
         <div className="flex items-center space-x-3">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-200">
-            <User className="h-3.5 w-3.5 text-gray-600" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 border border-gray-200">
+            <User className="h-4 w-4 text-gray-600" />
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
@@ -161,11 +131,11 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
   )
 
   return (
-    <div className="flex h-screen bg-white">
+    <div className="flex h-screen bg-gray-50">
       {/* Desktop Sidebar */}
       <div
         className={cn(
-          "hidden bg-white transition-all duration-300 lg:block",
+          "hidden bg-gray-50 transition-all duration-300 lg:block",
           collapsed ? "w-16" : "w-64",
         )}
       >
@@ -186,7 +156,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="fixed inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-          <div className="fixed left-0 top-0 h-full w-64 bg-white shadow-xl">
+          <div className="fixed left-0 top-0 h-full w-64 bg-gray-50 shadow-xl">
             <SidebarContent />
           </div>
         </div>
@@ -195,15 +165,15 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
       {/* Main Content */}
       <div className="flex flex-1 flex-col overflow-hidden bg-white">
         {/* Mobile Header */}
-        <div className="flex h-14 items-center bg-white px-4 lg:hidden">
+        <div className="flex h-14 items-center bg-white border-b border-gray-200 px-4 lg:hidden">
           <Button variant="ghost" size="sm" onClick={() => setMobileOpen(true)} className="mr-3 hover:bg-gray-100">
             <Menu className="h-5 w-5 text-gray-600" />
           </Button>
           <Link href="/role-selector" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
-            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-blue-500 shadow-sm">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 shadow-sm">
               <Building2 className="h-4 w-4 text-white" />
             </div>
-            <span className="text-base font-medium text-gray-900">FundConnect</span>
+            <span className="text-lg font-semibold text-gray-900">FundConnect</span>
           </Link>
         </div>
 
