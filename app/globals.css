@@ -1,0 +1,212 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Updated color palette: grey main, white secondary, orange accent */
+  --background: oklch(1 0 0); /* Clean white background */
+  --foreground: oklch(0.25 0 0); /* Dark gray text for readability */
+  --card: oklch(0.98 0 0); /* Pure white card background */
+  --card-foreground: oklch(0.25 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.25 0 0);
+  --primary: oklch(0.7 0.2 30); /* Vibrant orange accent (#ff4000) */
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.95 0 0); /* Light grey secondary */
+  --secondary-foreground: oklch(0.25 0 0);
+  --muted: oklch(0.96 0 0); /* Very light grey muted */
+  --muted-foreground: oklch(0.5 0 0);
+  --accent: oklch(0.7 0.2 30); /* Vibrant orange accent (#ff4000) */
+  --accent-foreground: oklch(1 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.9 0 0); /* Light grey border */
+  --input: oklch(0.98 0 0); /* White input background */
+  --ring: oklch(0.7 0.2 30 / 0.3);
+
+  /* Custom orange highlight color */
+  --highlight: oklch(0.7 0.2 30); /* Vibrant orange highlight (#ff4000) */
+
+  /* Pop colors for tags - vibrant but balanced */
+  --tag-blue: oklch(0.6 0.2 240);
+  --tag-green: oklch(0.6 0.18 140);
+  --tag-purple: oklch(0.65 0.2 300);
+  --tag-pink: oklch(0.7 0.2 350);
+  --tag-teal: oklch(0.6 0.18 180);
+  --tag-yellow: oklch(0.75 0.15 80);
+  --tag-red: oklch(0.65 0.2 25);
+  --tag-indigo: oklch(0.6 0.2 270);
+
+  --chart-1: oklch(0.65 0.12 60);
+  --chart-2: oklch(0.6 0.2 240);
+  --chart-3: oklch(0.6 0.18 140);
+  --chart-4: oklch(0.65 0.2 300);
+  --chart-5: oklch(0.6 0.18 180);
+  --radius: 0.5rem;
+  --sidebar: oklch(0.95 0 0); /* Light grey sidebar */
+  --sidebar-foreground: oklch(0.25 0 0);
+  --sidebar-primary: oklch(0.7 0.2 30); /* Vibrant orange accent for sidebar (#ff4000) */
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.92 0 0); /* Slightly darker grey for sidebar accent */
+  --sidebar-accent-foreground: oklch(0.25 0 0);
+  --sidebar-border: oklch(0.9 0 0); /* Light grey border */
+  --sidebar-ring: oklch(0.7 0.2 30 / 0.3);
+}
+
+.dark {
+  /* Updated dark mode colors to match new palette */
+  --background: oklch(0.08 0 0);
+  --foreground: oklch(0.95 0 0);
+  --card: oklch(0.12 0.01 60);
+  --card-foreground: oklch(0.95 0 0);
+  --popover: oklch(0.08 0 0);
+  --popover-foreground: oklch(0.95 0 0);
+  --primary: oklch(0.7 0.2 30); /* Vibrant orange accent for dark mode (#ff4000) */
+  --primary-foreground: oklch(0.08 0 0);
+  --secondary: oklch(0.2 0 0); /* Dark grey secondary */
+  --secondary-foreground: oklch(0.95 0 0);
+  --muted: oklch(0.15 0 0); /* Very dark grey muted */
+  --muted-foreground: oklch(0.6 0 0);
+  --accent: oklch(0.7 0.2 30); /* Vibrant orange accent (#ff4000) */
+  --accent-foreground: oklch(0.08 0 0);
+  --destructive: oklch(0.6 0.2 25);
+  --destructive-foreground: oklch(0.95 0 0);
+  --border: oklch(0.2 0 0); /* Dark grey border */
+  --input: oklch(0.15 0 0); /* Dark grey input */
+  --ring: oklch(0.7 0.2 30 / 0.3);
+
+  /* Custom orange highlight color for dark mode */
+  --highlight: oklch(0.7 0.2 30); /* Vibrant orange highlight for dark mode (#ff4000) */
+
+  /* Dark mode pop colors for tags */
+  --tag-blue: oklch(0.7 0.2 240);
+  --tag-green: oklch(0.7 0.18 140);
+  --tag-purple: oklch(0.75 0.2 300);
+  --tag-pink: oklch(0.8 0.2 350);
+  --tag-teal: oklch(0.7 0.18 180);
+  --tag-yellow: oklch(0.8 0.15 80);
+  --tag-red: oklch(0.75 0.2 25);
+  --tag-indigo: oklch(0.7 0.2 270);
+
+  --chart-1: oklch(0.7 0.15 60);
+  --chart-2: oklch(0.7 0.2 240);
+  --chart-3: oklch(0.7 0.18 140);
+  --chart-4: oklch(0.75 0.2 300);
+  --chart-5: oklch(0.7 0.18 180);
+  --sidebar: oklch(0.12 0 0); /* Dark grey sidebar */
+  --sidebar-foreground: oklch(0.95 0 0);
+  --sidebar-primary: oklch(0.7 0.2 30); /* Vibrant orange accent for sidebar (#ff4000) */
+  --sidebar-primary-foreground: oklch(0.08 0 0);
+  --sidebar-accent: oklch(0.2 0 0); /* Dark grey sidebar accent */
+  --sidebar-accent-foreground: oklch(0.95 0 0);
+  --sidebar-border: oklch(0.2 0 0); /* Dark grey border */
+  --sidebar-ring: oklch(0.7 0.2 30 / 0.3);
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-highlight: var(--highlight);
+
+  /* Added pop color utilities for tags */
+  --color-tag-blue: var(--tag-blue);
+  --color-tag-green: var(--tag-green);
+  --color-tag-purple: var(--tag-purple);
+  --color-tag-pink: var(--tag-pink);
+  --color-tag-teal: var(--tag-teal);
+  --color-tag-yellow: var(--tag-yellow);
+  --color-tag-red: var(--tag-red);
+  --color-tag-indigo: var(--tag-indigo);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Fixed utility classes syntax for pop color tags */
+@layer utilities {
+  .tag-blue {
+    background-color: var(--tag-blue);
+    color: white;
+  }
+  .tag-green {
+    background-color: var(--tag-green);
+    color: white;
+  }
+  .tag-purple {
+    background-color: var(--tag-purple);
+    color: white;
+  }
+  .tag-pink {
+    background-color: var(--tag-pink);
+    color: white;
+  }
+  .tag-teal {
+    background-color: var(--tag-teal);
+    color: white;
+  }
+  .tag-yellow {
+    background-color: var(--tag-yellow);
+    color: black;
+  }
+  .tag-red {
+    background-color: var(--tag-red);
+    color: white;
+  }
+  .tag-indigo {
+    background-color: var(--tag-indigo);
+    color: white;
+  }
+  
+  .highlight {
+    color: var(--highlight);
+  }
+  
+  .bg-highlight {
+    background-color: var(--highlight);
+    color: white;
+  }
+}
