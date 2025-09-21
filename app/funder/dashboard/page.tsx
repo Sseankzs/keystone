@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,15 +8,17 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { 
-  Building2, Users, TrendingUp, Eye, MessageCircle, Plus, Settings, BarChart3, FileText,
-  Search, Filter, Download, MoreHorizontal, Calendar, DollarSign, Star, Clock, CheckCircle, XCircle,
-  ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, Minus, Loader2,
-  CircleCheck,
-  Loader
+import {
+  Building2, Users, TrendingUp, Eye, MessageCircle, Plus, Settings, Upload, LinkIcon, FileText, Tag,
+  CheckCircle, ArrowRight, X, Loader2, Target, DollarSign, Calendar,
+  Search, Filter, Download, MoreHorizontal, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, Minus, Loader,
+  CircleCheck, XCircle
 } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 // Mock data
 const ACTIVE_GRANTS = [
@@ -222,6 +224,102 @@ export default function FunderDashboard() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
+  const [categoryFilter, setCategoryFilter] = useState("all")
+
+  // Reset pagination when filters change
+  React.useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, statusFilter, grantFilter, categoryFilter])
+
+  // Upload functionality
+  const [uploadMethod, setUploadMethod] = useState<"file" | "url">("file")
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [isProcessed, setIsProcessed] = useState(false)
+  const [dragActive, setDragActive] = useState(false)
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
+  const [formData, setFormData] = useState({
+    grantTitle: "",
+    description: "",
+    url: "",
+    file: null as File | null,
+  })
+
+  // Auto-generated content
+  const MOCK_TAGS = ["Technology", "AI/ML", "Startups", "Innovation", "Series A", "B2B", "SaaS", "Growth Stage"]
+  const MOCK_CHECKLIST = [
+    { item: "Business plan required", required: true },
+    { item: "Financial projections (3 years)", required: true },
+    { item: "Technical documentation", required: true },
+    { item: "Team CVs and backgrounds", required: true },
+    { item: "Market analysis", required: false },
+    { item: "Customer testimonials", required: false },
+  ]
+
+  // Upload handlers
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true)
+    } else if (e.type === "dragleave") {
+      setDragActive(false)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragActive(false)
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const files = Array.from(e.dataTransfer.files)
+      setUploadedFiles((prev) => [...prev, ...files])
+      if (files[0]) {
+        setFormData((prev) => ({ ...prev, file: files[0] }))
+      }
+    }
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null
+    setFormData((prev) => ({ ...prev, file }))
+    if (file) {
+      setUploadedFiles((prev) => [...prev, file])
+    }
+  }
+
+  const removeFile = (index: number) => {
+    setUploadedFiles((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsProcessing(true)
+
+    // TODO: Upload file/URL to backend for processing
+    console.log("Processing grant:", formData)
+
+    // Simulate processing time
+    setTimeout(() => {
+      setIsProcessing(false)
+      setIsProcessed(true)
+    }, 3000)
+  }
+
+  const handleSaveGrant = () => {
+    // TODO: Save processed grant to database
+    console.log("Saving grant with tags and checklist")
+    // Reset form and go back to overview
+    setIsProcessed(false)
+    setFormData({ grantTitle: "", description: "", url: "", file: null })
+    setUploadedFiles([])
+    setActiveTab("overview")
+  }
 
   // Filter and sort applications
   const filteredApplications = applications
@@ -231,7 +329,8 @@ export default function FunderDashboard() {
                            app.sector.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesStatus = statusFilter === "all" || app.status === statusFilter
       const matchesGrant = grantFilter === "all" || app.grantTitle === grantFilter
-      return matchesSearch && matchesStatus && matchesGrant
+      const matchesCategory = categoryFilter === "all" || app.sector.toLowerCase() === categoryFilter.toLowerCase()
+      return matchesSearch && matchesStatus && matchesGrant && matchesCategory
     })
     .sort((a, b) => {
       let aValue = a[sortBy as keyof typeof a]
@@ -269,6 +368,19 @@ export default function FunderDashboard() {
         ? prev.filter(appId => appId !== id)
         : [...prev, id]
     )
+  }
+
+  // Handle row expansion
+  const toggleRowExpansion = (id: string) => {
+    setExpandedRows(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(id)) {
+        newSet.delete(id)
+      } else {
+        newSet.add(id)
+      }
+      return newSet
+    })
   }
 
   const handleSelectAll = () => {
@@ -340,98 +452,77 @@ export default function FunderDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header - Notion Style */}
+      <header className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Building2 className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-bold text-foreground">FundConnect</span>
+            <div className="flex items-center gap-3">
+              <Building2 className="h-8 w-8 text-gray-900" />
+              <h1 className="text-2xl font-bold text-gray-900">Funder Dashboard</h1>
             </div>
-            <nav className="hidden md:flex items-center space-x-6">
-              <Link href="/funder/grants" className="text-muted-foreground hover:text-foreground transition-colors">
-                My Grants
-              </Link>
-              <Link
-                href="/funder/applications"
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Applications
-              </Link>
-              <Link href="/funder/analytics" className="text-muted-foreground hover:text-foreground transition-colors">
-                Analytics
-              </Link>
-            </nav>
-            <div className="flex items-center space-x-3">
-              <Button variant="outline" size="sm">
+            <div className="flex items-center gap-3">
+              <Button variant="outline" size="sm" className="border-gray-300 text-gray-700 hover:bg-gray-50">
                 <Settings className="h-4 w-4 mr-2" />
                 Settings
               </Button>
-              <Link href="/funder/upload">
-                <Button size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Grant
-                </Button>
-              </Link>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Welcome back, Innovation Foundation!</h1>
-          <p className="text-muted-foreground">Manage your grants and review applications from promising startups.</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back, Innovation Foundation!</h1>
+          <p className="text-gray-600 text-lg">Manage your grants and review applications from promising startups.</p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
-          <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-200">
-            <div className="text-xs text-gray-500 font-medium mb-1">Total Grants</div>
-            <div className="text-xl font-semibold text-gray-900 mb-1">{STATS.totalGrants}</div>
-            <div className="text-xs text-gray-400">All time</div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="text-sm text-gray-600 font-medium mb-2">Total Grants</div>
+            <div className="text-2xl font-bold text-gray-900">{STATS.totalGrants}</div>
+            <div className="text-xs text-gray-500 mt-1">All time</div>
           </div>
 
-          <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-200">
-            <div className="text-xs text-gray-500 font-medium mb-1">Active Grants</div>
-            <div className="text-xl font-semibold text-gray-900 mb-1">{STATS.activeGrants}</div>
-            <div className="text-xs text-gray-400">Currently open</div>
+          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="text-sm text-gray-600 font-medium mb-2">Active Grants</div>
+            <div className="text-2xl font-bold text-gray-900">{STATS.activeGrants}</div>
+            <div className="text-xs text-gray-500 mt-1">Currently open</div>
           </div>
 
-          <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-200">
-            <div className="text-xs text-gray-500 font-medium mb-1">Applications</div>
-            <div className="text-xl font-semibold text-gray-900 mb-1">{STATS.totalApplications}</div>
-            <div className="text-xs text-gray-400">Total received</div>
+          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="text-sm text-gray-600 font-medium mb-2">Applications</div>
+            <div className="text-2xl font-bold text-gray-900">{STATS.totalApplications}</div>
+            <div className="text-xs text-gray-500 mt-1">Total received</div>
           </div>
 
-          <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-200">
-            <div className="text-xs text-gray-500 font-medium mb-1">Approval Rate</div>
-            <div className="text-xl font-semibold text-gray-900 mb-1">{STATS.approvalRate}%</div>
-            <div className="text-xs text-gray-400">Last 6 months</div>
+          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="text-sm text-gray-600 font-medium mb-2">Approval Rate</div>
+            <div className="text-2xl font-bold text-gray-900">{STATS.approvalRate}%</div>
+            <div className="text-xs text-gray-500 mt-1">Last 6 months</div>
           </div>
 
-          <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-200">
-            <div className="text-xs text-gray-500 font-medium mb-1">Total Funded</div>
-            <div className="text-xl font-semibold text-gray-900 mb-1">{STATS.totalFunded}</div>
-            <div className="text-xs text-gray-400">This year</div>
+          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="text-sm text-gray-600 font-medium mb-2">Total Funded</div>
+            <div className="text-2xl font-bold text-gray-900">{STATS.totalFunded}</div>
+            <div className="text-xs text-gray-500 mt-1">This year</div>
           </div>
 
-          <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-200">
-            <div className="text-xs text-gray-500 font-medium mb-1">Avg Processing</div>
-            <div className="text-xl font-semibold text-gray-900 mb-1">{STATS.avgProcessingTime}</div>
-            <div className="text-xs text-gray-400">Review time</div>
+          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="text-sm text-gray-600 font-medium mb-2">Avg Processing</div>
+            <div className="text-2xl font-bold text-gray-900">{STATS.avgProcessingTime}</div>
+            <div className="text-xs text-gray-500 mt-1">Review time</div>
           </div>
         </div>
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="grants">My Grants</TabsTrigger>
-            <TabsTrigger value="applications">Recent Applications</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsList className="mb-6 bg-gray-100 p-1 rounded-xl">
+            <TabsTrigger value="overview" className="px-6 py-2.5 rounded-lg">Overview</TabsTrigger>
+            <TabsTrigger value="applications" className="px-6 py-2.5 rounded-lg">Applications</TabsTrigger>
+            <TabsTrigger value="upload" className="px-6 py-2.5 rounded-lg">Create Grant</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -568,339 +659,582 @@ export default function FunderDashboard() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="applications">
-            <div className="space-y-6">
-              {/* Filters and Search */}
-            <Card>
+          <TabsContent value="upload" className="space-y-6">
+            {/* Upload Form */}
+            <Card className="max-w-4xl">
               <CardHeader>
-                <CardTitle>Application Management</CardTitle>
-                  <CardDescription>Review and manage all applications ({filteredApplications.length} total)</CardDescription>
+                <CardTitle className="flex items-center gap-2">
+                  <Upload className="h-5 w-5 text-blue-600" />
+                  Create New Grant
+                </CardTitle>
+                <CardDescription>
+                  Upload your grant document or provide a URL. Our AI will extract key information and create matching criteria.
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                  <div className="flex flex-col lg:flex-row gap-4 mb-6">
-                    {/* Search */}
-                    <div className="flex-1">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Search by company, grant, or sector..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-10"
-                        />
-                      </div>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Basic Information */}
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="grantTitle">Grant Title *</Label>
+                      <Input
+                        id="grantTitle"
+                        placeholder="Enter the grant title"
+                        value={formData.grantTitle}
+                        onChange={(e) => handleInputChange("grantTitle", e.target.value)}
+                        className="border-gray-200 focus:border-blue-500"
+                        required
+                      />
                     </div>
-                    
-                    {/* Filters */}
-                    <div className="flex gap-2">
-                      <Select value={statusFilter} onValueChange={setStatusFilter}>
-                        <SelectTrigger className="w-40">
-                          <SelectValue placeholder="Status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Status</SelectItem>
-                          <SelectItem value="Pending Review">Pending Review</SelectItem>
-                          <SelectItem value="Under Review">Under Review</SelectItem>
-                          <SelectItem value="Approved">Approved</SelectItem>
-                          <SelectItem value="Rejected">Rejected</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      
-                      <Select value={grantFilter} onValueChange={setGrantFilter}>
-                        <SelectTrigger className="w-48">
-                          <SelectValue placeholder="Grant" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Grants</SelectItem>
-                          {uniqueGrants.map((grant) => (
-                            <SelectItem key={grant} value={grant}>{grant}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="description">Brief Description</Label>
+                      <Textarea
+                        id="description"
+                        placeholder="Provide a brief description of the grant..."
+                        value={formData.description}
+                        onChange={(e) => handleInputChange("description", e.target.value)}
+                        rows={3}
+                        className="border-gray-200 focus:border-blue-500"
+                      />
                     </div>
                   </div>
 
-                  {/* Bulk Actions */}
-                  {selectedApplications.length > 0 && (
-                    <div className="flex items-center gap-2 mb-4 p-3 bg-muted/50 rounded-lg">
-                      <span className="text-sm font-medium">{selectedApplications.length} selected</span>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline" onClick={() => handleBulkAction("approve")}>
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Approve
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleBulkAction("reject")}>
-                          <XCircle className="h-4 w-4 mr-2" />
-                          Reject
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleBulkAction("export")}>
-                          <Download className="h-4 w-4 mr-2" />
-                          Export
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                  {/* Upload Method Selection */}
+                  <Tabs value={uploadMethod} onValueChange={(value) => setUploadMethod(value as "file" | "url")}>
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="file">Upload File</TabsTrigger>
+                      <TabsTrigger value="url">Provide URL</TabsTrigger>
+                    </TabsList>
 
-              {/* Applications List */}
-              <Card>
-                <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="border-b border-border">
-                        <tr className="text-left">
-                          <th className="p-4">
-                            <Checkbox
-                              checked={selectedApplications.length === paginatedApplications.length && paginatedApplications.length > 0}
-                              onCheckedChange={handleSelectAll}
-                            />
-                          </th>
-                          <th 
-                            className="p-4 font-medium cursor-pointer hover:bg-muted/50 transition-colors select-none"
-                            onClick={() => handleSort("companyName")}
-                          >
-                            <div className="flex items-center gap-2">
-                              Company
-                              {getSortIcon("companyName")}
-                            </div>
-                          </th>
-                          <th 
-                            className="p-4 font-medium cursor-pointer hover:bg-muted/50 transition-colors select-none"
-                            onClick={() => handleSort("grantTitle")}
-                          >
-                            <div className="flex items-center gap-2">
-                              Grant
-                              {getSortIcon("grantTitle")}
-                            </div>
-                          </th>
-                          <th 
-                            className="p-4 font-medium cursor-pointer hover:bg-muted/50 transition-colors select-none"
-                            onClick={() => handleSort("submittedDate")}
-                          >
-                            <div className="flex items-center gap-2">
-                              Submitted
-                              {getSortIcon("submittedDate")}
-                            </div>
-                          </th>
-                          <th 
-                            className="p-4 font-medium select-none"
-                            onClick={() => handleSort("status")}
-                          >
-                            <div className="flex items-center gap-2">
-                              Status
-                              {getSortIcon("status")}
-                            </div>
-                          </th>
-                          <th 
-                            className="p-4 font-medium cursor-pointer hover:bg-muted/50 transition-colors select-none"
-                            onClick={() => handleSort("score")}
-                          >
-                            <div className="flex items-center gap-2">
-                              Score
-                              {getSortIcon("score")}
-                            </div>
-                          </th>
-                          <th 
-                            className="p-4 font-medium cursor-pointer hover:bg-muted/50 transition-colors select-none"
-                            onClick={() => handleSort("priority")}
-                          >
-                            <div className="flex items-center gap-2">
-                              Priority
-                              {getSortIcon("priority")}
-                            </div>
-                          </th>
-                          <th 
-                            className="p-4 font-medium cursor-pointer hover:bg-muted/50 transition-colors select-none"
-                            onClick={() => handleSort("amount")}
-                          >
-                            <div className="flex items-center gap-2">
-                              Amount
-                              {getSortIcon("amount")}
-                            </div>
-                          </th>
-                          <th className="p-4 font-medium">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {paginatedApplications.map((app) => (
-                          <tr key={app.id} className="border-b border-border hover:bg-muted/50">
-                            <td className="p-4">
-                              <Checkbox
-                                checked={selectedApplications.includes(app.id)}
-                                onCheckedChange={() => handleSelectApplication(app.id)}
-                              />
-                            </td>
-                            <td className="p-4">
-                              <div>
-                                <div className="font-medium">{app.companyName}</div>
-                                <div className="text-sm text-muted-foreground">{app.sector} • {app.stage}</div>
-                                <div className="text-sm text-muted-foreground">{app.location}</div>
-                              </div>
-                            </td>
-                            <td className="p-4">
-                              <div className="text-sm">{app.grantTitle}</div>
-                            </td>
-                            <td className="p-4">
-                              <div className="text-sm">{new Date(app.submittedDate).toLocaleDateString()}</div>
-                              {app.reviewer && (
-                                <div className="text-xs text-muted-foreground">by {app.reviewer}</div>
-                              )}
-                            </td>
-                              <td className="p-4">
-                                <div className={`inline-flex items-center gap-1 px-1.5 py-1 rounded-md text-sm font-medium justify-center ${
-                                  app.status === 'Approved' ? 'bg-green-100 text-green-600 min-w-[100px]' :
-                                  app.status === 'Rejected' ? 'bg-red-100 text-red-600 min-w-[100px]' :
-                                  app.status === 'Under Review' ? 'bg-blue-100 text-blue-600 min-w-[120px]' :
-                                  app.status === 'Pending Review' ? 'bg-orange-100 text-orange-600 min-w-[155px]' :
-                                  'bg-gray-100 text-gray-600 min-w-[100px]'
-                                }`}>
-                                  {app.status === 'Approved' && <CircleCheck className="w-4 h-4" />}
-                                  {app.status === 'Rejected' && <XCircle className="w-4 h-4" />}
-                                  {app.status === 'Under Review' && <Loader className="w-4 h-4" />}
-                                  {app.status === 'Pending Review' && <AlertTriangle className="w-4 h-4" />}
-                                  {app.status !== 'Approved' && app.status !== 'Rejected' && app.status !== 'Under Review' && app.status !== 'Pending Review' && <Minus className="w-4 h-4" />}
-                                  <span>{app.status}</span>
-                                </div>
-                              </td>
-                            <td className="p-4">
-                              {app.score > 0 ? (
-                                <div className="flex justify-center">
-                                  <div className="relative w-12 h-12">
-                                    <svg className="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
-                                      <path
-                                        className="text-gray-200"
-                                        stroke="currentColor"
-                                        strokeWidth="4"
-                                        fill="none"
-                                        d="M18 2.0845
-                                          a 15.9155 15.9155 0 0 1 0 31.831
-                                          a 15.9155 15.9155 0 0 1 0 -31.831"
-                                      />
-                                      <path
-                                        className={`${
-                                          app.score >= 80 ? 'text-green-500' :
-                                          app.score >= 60 ? 'text-yellow-400' :
-                                          'text-red-500'
-                                        }`}
-                                        stroke="currentColor"
-                                        strokeWidth="4"
-                                        fill="none"
-                                        strokeLinecap="round"
-                                        strokeDasharray={`${app.score}, 100`}
-                                        d="M18 2.0845
-                                          a 15.9155 15.9155 0 0 1 0 31.831
-                                          a 15.9155 15.9155 0 0 1 0 -31.831"
-                                      />
-                                    </svg>
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                      <span className="text-xs font-semibold text-gray-700">{app.score}%</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              ) : (
-                                <span className="text-muted-foreground">-</span>
-                              )}
-                            </td>
-                            <td className="p-4">
-                              <div className="flex items-center gap-1">
-                                <div className={`w-1 h-4 rounded-lg ${
-                                  app.priority === 'High' ? 'bg-red-600' :
-                                  app.priority === 'Medium' ? 'bg-yellow-600' :
-                                  'bg-green-600'
-                                }`} />
-                                <span className={`w-18 px-1.5 py-0.3 rounded text-sm font-medium text-left ${
-                                  app.priority === 'High' ? 'bg-red-100 text-red-600' :
-                                  app.priority === 'Medium' ? 'bg-yellow-100 text-yellow-700' :
-                                  'bg-green-100 text-green-700'
-                                }`}>
-                                  {app.priority}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="p-4">
-                              <div className="font-medium text-foreground">{app.amount}</div>
-                            </td>
-                            <td className="p-4">
-                              <div className="flex gap-1">
-                                <Button variant="outline" size="sm">
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                                <Button variant="outline" size="sm">
-                                  <MessageCircle className="h-4 w-4" />
-                                </Button>
-                                <Button variant="outline" size="sm">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  
-                  {/* Pagination */}
-                  {totalPages > 1 && (
-                    <div className="flex items-center justify-between p-4 border-t border-border">
-                      <div className="text-sm text-muted-foreground">
-                        Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredApplications.length)} of {filteredApplications.length} applications
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                          disabled={currentPage === 1}
+                    <TabsContent value="file" className="space-y-4 mt-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="file">Grant Document (PDF) *</Label>
+                        <div
+                          className={cn(
+                            "border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200",
+                            dragActive
+                              ? "border-blue-400 bg-blue-50/50"
+                              : "border-gray-300 hover:border-gray-400 hover:bg-gray-50/50"
+                          )}
+                          onDragEnter={handleDrag}
+                          onDragLeave={handleDrag}
+                          onDragOver={handleDrag}
+                          onDrop={handleDrop}
                         >
-                          Previous
-                        </Button>
-                        <div className="flex gap-1">
-                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                            const page = i + 1
-                            return (
-                              <Button
-                                key={page}
-                                variant={currentPage === page ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => setCurrentPage(page)}
-                              >
-                                {page}
-                              </Button>
-                            )
-                          })}
+                          <div className="flex flex-col items-center space-y-4">
+                            <div className={cn(
+                              "w-16 h-16 rounded-full flex items-center justify-center transition-colors",
+                              dragActive ? "bg-blue-100" : "bg-gray-100"
+                            )}>
+                              <Upload className={cn(
+                                "h-8 w-8 transition-colors",
+                                dragActive ? "text-blue-600" : "text-gray-500"
+                              )} />
+                            </div>
+                            <div>
+                              <h3 className="text-lg font-medium text-gray-900 mb-2">Upload grant documents</h3>
+                              <p className="text-gray-600">
+                                Drag and drop files here or{" "}
+                                <label className="text-blue-600 hover:text-blue-700 cursor-pointer underline">
+                                  choose files to upload
+                                  <input
+                                    id="file"
+                                    type="file"
+                                    accept=".pdf,.txt,.md"
+                                    onChange={handleFileChange}
+                                    className="hidden"
+                                    required={uploadMethod === "file"}
+                                  />
+                                </label>
+                              </p>
+                            </div>
+                            <p className="text-sm text-gray-500">Supported: PDF, DOC, XLSX, PNG, JPG (Max 10MB each)</p>
+                          </div>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                          disabled={currentPage === totalPages}
-                        >
-                          Next
-                        </Button>
+
+                        {/* Uploaded Files List */}
+                        {uploadedFiles.length > 0 && (
+                          <div className="mt-4">
+                            <h4 className="text-sm font-medium text-gray-900 mb-3">Uploaded Files</h4>
+                            <div className="space-y-2">
+                              {uploadedFiles.map((file, index) => (
+                                <div key={index} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+                                  <div className="flex items-center space-x-3">
+                                    <FileText className="h-4 w-4 text-blue-600" />
+                                    <span className="text-sm font-medium text-gray-900">{file.name}</span>
+                                    <span className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(1)} MB</span>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeFile(index)}
+                                    className="text-gray-500 hover:text-gray-700"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
+                    </TabsContent>
+
+                    <TabsContent value="url" className="space-y-4 mt-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="url">Grant Document URL *</Label>
+                        <div className="relative">
+                          <LinkIcon className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+                          <Input
+                            id="url"
+                            type="url"
+                            placeholder="https://example.com/grant-document.pdf"
+                            value={formData.url}
+                            onChange={(e) => handleInputChange("url", e.target.value)}
+                            className="pl-10 border-gray-200 focus:border-blue-500"
+                            required={uploadMethod === "url"}
+                          />
+                        </div>
+                        <p className="text-sm text-gray-500">
+                          Provide a direct link to your grant document (PDF format preferred)
+                        </p>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+
+                  {/* Processing Status */}
+                  {isProcessing && (
+                    <div className="bg-blue-50 border border-blue-200 p-6 rounded-xl text-center">
+                      <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                      <h3 className="font-semibold text-gray-900 mb-2">Processing Grant Document</h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Our AI is analyzing your document to extract key information, generate tags, and create application requirements.
+                      </p>
+                      <Progress value={66} className="max-w-xs mx-auto" />
                     </div>
                   )}
+
+                  {/* Submit Button */}
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                    disabled={
+                      isProcessing ||
+                      !formData.grantTitle ||
+                      (uploadMethod === "file" && !formData.file) ||
+                      (uploadMethod === "url" && !formData.url)
+                    }
+                  >
+                    {isProcessing ? "Processing..." : "Process Grant Document"}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </form>
               </CardContent>
             </Card>
+
+            {/* Processed Results */}
+            {isProcessed && (
+              <div className="space-y-6 max-w-4xl">
+                <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <CheckCircle className="h-6 w-6 text-green-600" />
+                    <h3 className="text-lg font-semibold text-green-900">Grant Processing Complete!</h3>
+                  </div>
+                  <p className="text-green-700 mb-4">
+                    We've successfully analyzed your grant document and auto-generated the following:
+                  </p>
+                  <div className="flex gap-4">
+                    <Button onClick={handleSaveGrant} className="bg-green-600 hover:bg-green-700 text-white">
+                      Save Grant
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" onClick={() => setIsProcessed(false)}>
+                      Make Changes
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="grid lg:grid-cols-2 gap-6">
+                  {/* Tags Section */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Tag className="h-5 w-5 text-blue-600" />
+                        Auto-Generated Tags
+                      </CardTitle>
+                      <CardDescription>These tags help match your grant with relevant startups</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {MOCK_TAGS.map((tag) => (
+                          <Badge
+                            key={tag}
+                            variant="secondary"
+                            className="cursor-pointer hover:bg-blue-100 hover:text-blue-800"
+                          >
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                      <Button variant="outline" size="sm">
+                        <Tag className="mr-2 h-4 w-4" />
+                        Edit Tags
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* Checklist Section */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <CheckCircle className="h-5 w-5 text-blue-600" />
+                        Application Checklist
+                      </CardTitle>
+                      <CardDescription>Requirements extracted from your grant document</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {MOCK_CHECKLIST.map((item, index) => (
+                          <div key={index} className="flex items-center justify-between">
+                            <span className="text-sm">{item.item}</span>
+                            <Badge variant={item.required ? "default" : "secondary"}>
+                              {item.required ? "Required" : "Optional"}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                      <Button variant="outline" size="sm" className="mt-4">
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        Edit Checklist
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="applications">
+            {/* Simplified Design - Just Filters and Table */}
+            <div className="space-y-6">
+              {/* Filter Tabs */}
+              <div className="flex items-center gap-4">
+                <div className="flex gap-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className={categoryFilter === "all" ? "bg-blue-50 text-blue-700 border-blue-200" : "text-gray-600 hover:bg-gray-50"}
+                    onClick={() => setCategoryFilter("all")}
+                  >
+                    All
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className={categoryFilter === "technology" ? "bg-blue-50 text-blue-700 border-blue-200" : "text-gray-600 hover:bg-gray-50"}
+                    onClick={() => setCategoryFilter("technology")}
+                  >
+                    Technology
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className={categoryFilter === "clean energy" ? "bg-blue-50 text-blue-700 border-blue-200" : "text-gray-600 hover:bg-gray-50"}
+                    onClick={() => setCategoryFilter("clean energy")}
+                  >
+                    Clean Energy
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className={categoryFilter === "healthcare" ? "bg-blue-50 text-blue-700 border-blue-200" : "text-gray-600 hover:bg-gray-50"}
+                    onClick={() => setCategoryFilter("healthcare")}
+                  >
+                    Healthcare
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className={categoryFilter === "financial services" ? "bg-blue-50 text-blue-700 border-blue-200" : "text-gray-600 hover:bg-gray-50"}
+                    onClick={() => setCategoryFilter("financial services")}
+                  >
+                    Financial
+                  </Button>
+                </div>
+                <Button 
+                  size="sm" 
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => {
+                    // Add new application logic
+                    const newApp = {
+                      id: String(ALL_APPLICATIONS.length + 1),
+                      companyName: `New Company ${ALL_APPLICATIONS.length + 1}`,
+                      grantTitle: "Tech Innovation Grant 2024",
+                      amount: "$100,000",
+                      status: "Pending Review",
+                      submittedDate: new Date().toISOString().split('T')[0],
+                      score: 0,
+                      sector: "Technology",
+                      stage: "Seed",
+                      location: "San Francisco, CA",
+                      employees: "1-10",
+                      priority: "Medium",
+                      reviewer: null,
+                      lastActivity: new Date().toISOString().split('T')[0],
+                      documents: 3,
+                      chatMessages: 0,
+                    }
+                    setApplications(prev => [...prev, newApp])
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  New
+                </Button>
+              </div>
+
+              {/* Table Controls */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="All Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="Pending Review">Pending Review</SelectItem>
+                      <SelectItem value="Under Review">Under Review</SelectItem>
+                      <SelectItem value="Approved">Approved</SelectItem>
+                      <SelectItem value="Rejected">Rejected</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select value={grantFilter} onValueChange={setGrantFilter}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="All Grants" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Grants</SelectItem>
+                      {uniqueGrants.map((grant) => (
+                        <SelectItem key={grant} value={grant}>{grant}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  <div className="relative">
+                    <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Search companies..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 w-64"
+                    />
+                  </div>
+                </div>
+                <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
+                  <Plus className="h-4 w-4 mr-2" />
+                  New
+                </Button>
+              </div>
+
+              {/* Companies Table */}
+              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900">Company ({filteredApplications.length})</h2>
+                </div>
+                
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                          onClick={() => handleSort("companyName")}
+                        >
+                          <div className="flex items-center gap-2">
+                            Company
+                            {getSortIcon("companyName")}
+                          </div>
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                          onClick={() => handleSort("grantTitle")}
+                        >
+                          <div className="flex items-center gap-2">
+                            Grant
+                            {getSortIcon("grantTitle")}
+                          </div>
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                          onClick={() => handleSort("amount")}
+                        >
+                          <div className="flex items-center gap-2">
+                            Funding
+                            {getSortIcon("amount")}
+                          </div>
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                          onClick={() => handleSort("submittedDate")}
+                        >
+                          <div className="flex items-center gap-2">
+                            Created on
+                            {getSortIcon("submittedDate")}
+                          </div>
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                          onClick={() => handleSort("sector")}
+                        >
+                          <div className="flex items-center gap-2">
+                            Categories
+                            {getSortIcon("sector")}
+                          </div>
+                        </th>
+                      </tr>
+                    </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {/* Sample company rows using actual mock data */}
+                          {paginatedApplications.map((app, index) => {
+                            const isExpanded = expandedRows.has(app.id)
+                            return (
+                              <>
+                                <tr key={app.id} className="hover:bg-gray-50">
+                                  <td className="px-6 py-4 whitespace-nowrap w-16">
+                                    <button
+                                      onClick={() => toggleRowExpansion(app.id)}
+                                      className="w-6 h-6 border border-gray-300 rounded flex items-center justify-center hover:bg-gray-50 transition-colors"
+                                    >
+                                      {isExpanded ? (
+                                        <Minus className="w-3 h-3 text-gray-600" />
+                                      ) : (
+                                        <Plus className="w-3 h-3 text-gray-600" />
+                                      )}
+                                    </button>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="text-sm font-medium text-gray-900">{app.companyName}</div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <span className="text-blue-500 font-medium">GRANT-{String(index + 1).padStart(2, '0')}</span>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {app.amount}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
+                                    {new Date(app.submittedDate).toLocaleDateString('en-US', {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric'
+                                    })}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="flex flex-wrap gap-1">
+                                      <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                        {app.sector}
+                                      </span>
+                                      <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                        {app.stage}
+                                      </span>
+                                    </div>
+                                  </td>
+                                </tr>
+                                {isExpanded && (
+                                  <tr>
+                                    <td colSpan={6} className="px-6 py-4 bg-gray-50">
+                                      <div className="space-y-4">
+                                        <div className="grid grid-cols-2 gap-6">
+                                          <div>
+                                            <h4 className="text-sm font-medium text-gray-900 mb-3">Company Details</h4>
+                                            <div className="space-y-2 text-sm">
+                                              <div className="flex justify-between">
+                                                <span className="text-gray-500">Location:</span>
+                                                <span className="text-gray-900">{app.location}</span>
+                                              </div>
+                                              <div className="flex justify-between">
+                                                <span className="text-gray-500">Employees:</span>
+                                                <span className="text-gray-900">{app.employees}</span>
+                                              </div>
+                                              <div className="flex justify-between">
+                                                <span className="text-gray-500">Priority:</span>
+                                                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                                  app.priority === 'High' ? 'bg-red-100 text-red-800' :
+                                                  app.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                                                  'bg-green-100 text-green-800'
+                                                }`}>
+                                                  {app.priority}
+                                                </span>
+                                              </div>
+                                              <div className="flex justify-between">
+                                                <span className="text-gray-500">Reviewer:</span>
+                                                <span className="text-gray-900">{app.reviewer || 'Unassigned'}</span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                          <div>
+                                            <h4 className="text-sm font-medium text-gray-900 mb-3">Application Status</h4>
+                                            <div className="space-y-2 text-sm">
+                                              <div className="flex justify-between">
+                                                <span className="text-gray-500">Status:</span>
+                                                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                                  app.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                                                  app.status === 'Rejected' ? 'bg-red-100 text-red-800' :
+                                                  app.status === 'Under Review' ? 'bg-blue-100 text-blue-800' :
+                                                  app.status === 'Pending Review' ? 'bg-orange-100 text-orange-800' :
+                                                  'bg-gray-100 text-gray-800'
+                                                }`}>
+                                                  {app.status}
+                                                </span>
+                                              </div>
+                                              <div className="flex justify-between">
+                                                <span className="text-gray-500">Score:</span>
+                                                <span className="text-gray-900">{app.score > 0 ? `${app.score}%` : 'Not scored'}</span>
+                                              </div>
+                                              <div className="flex justify-between">
+                                                <span className="text-gray-500">Documents:</span>
+                                                <span className="text-gray-900">{app.documents} files</span>
+                                              </div>
+                                              <div className="flex justify-between">
+                                                <span className="text-gray-500">Chat Messages:</span>
+                                                <span className="text-gray-900">{app.chatMessages}</span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                        <div className="pt-4 border-t border-gray-200">
+                                          <div className="flex gap-2">
+                                            <Button size="sm" variant="outline">
+                                              <Eye className="w-4 h-4 mr-2" />
+                                              View Application
+                                            </Button>
+                                            <Button size="sm" variant="outline">
+                                              <MessageCircle className="w-4 h-4 mr-2" />
+                                              Open Chat
+                                            </Button>
+                                            <Button size="sm" variant="outline">
+                                              <FileText className="w-4 h-4 mr-2" />
+                                              View Documents
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </>
+                            )
+                          })}
+                        </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           </TabsContent>
 
-          <TabsContent value="analytics">
-            <Card>
-              <CardHeader>
-                <CardTitle>Analytics & Insights</CardTitle>
-                <CardDescription>Track performance and funding trends</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Coming Soon</h3>
-                  <p className="text-muted-foreground">Detailed analytics and insights about your funding programs.</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
       </div>
     </div>

@@ -209,4 +209,57 @@
     background-color: var(--highlight);
     color: white;
   }
+  
+  /* Continuous marquee animation for grant titles */
+  .marquee-container {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .marquee-content {
+    display: inline-flex;
+    white-space: nowrap;
+  }
+
+  .marquee-content > div {
+    padding-right: 4rem; /* More spacing between repetitions */
+  }
+
+  @keyframes marquee-scroll {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(calc(-33.33% - 4rem));
+    }
+  }
+
+  /* Only apply animation to selected items */
+  .animate-scroll-left-selected .marquee-content {
+    animation: marquee-scroll 12s linear infinite;
+  }
+
+  /* Reset for non-selected items */
+  .marquee-container:not(.animate-scroll-left-selected) .marquee-content {
+    animation: none;
+    transform: translateX(0);
+  }
+
+  /* Progress bar fill animation */
+  @keyframes progress-fill {
+    0% {
+      transform: rotate(0deg);
+      stroke-dashoffset: var(--initial-offset);
+    }
+    100% {
+      transform: rotate(0deg);
+      stroke-dashoffset: var(--final-offset);
+    }
+  }
+
+  .animate-progress-fill {
+    animation: progress-fill 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+    animation-fill-mode: forwards;
+  }
 }

@@ -387,7 +387,7 @@ export default function FunderOnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background py-8 px-4">
+    <div className="min-h-screen bg-background py-8 px-4 overflow-y-auto">
       <div className="container mx-auto max-w-2xl">
         {/* Header */}
         <div className="text-center mb-8">
