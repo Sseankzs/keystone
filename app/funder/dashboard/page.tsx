@@ -252,15 +252,23 @@ export default function FunderDashboard() {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
   const [categoryFilter, setCategoryFilter] = useState("all")
 
+  // Upload functionality
+  const [uploadMethod, setUploadMethod] = useState<"file" | "url">("file")
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [isProcessed, setIsProcessed] = useState(false)
+
   // Reset pagination when filters change
   React.useEffect(() => {
     setCurrentPage(1)
   }, [searchTerm, statusFilter, grantFilter, categoryFilter])
 
-  // Upload functionality
-  const [uploadMethod, setUploadMethod] = useState<"file" | "url">("file")
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [isProcessed, setIsProcessed] = useState(false)
+  // Scroll to top when processing completes
+  React.useEffect(() => {
+    if (isProcessed) {
+      // Scroll to top of page to show the Grant Details and Tags section
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }, [isProcessed])
   const [dragActive, setDragActive] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
   const [formData, setFormData] = useState({
@@ -269,6 +277,7 @@ export default function FunderDashboard() {
     title: "",
     issuer: "",
     country: "",
+    status: "open",
     amount_min: "",
     amount_max: "",
     deadline: "",
@@ -340,6 +349,17 @@ export default function FunderDashboard() {
     setTimeout(() => {
       setIsProcessing(false)
       setIsProcessed(true)
+      // Populate form with mock data
+      setFormData(prev => ({
+        ...prev,
+        title: "Tech Innovation Grant 2024",
+        issuer: "Innovation Foundation",
+        country: "Malaysia",
+        status: "open",
+        amount_min: "500000",
+        amount_max: "2500000",
+        deadline: "2024-12-31"
+      }))
     }, 3000)
   }
 
@@ -354,6 +374,7 @@ export default function FunderDashboard() {
       title: "",
       issuer: "",
       country: "",
+      status: "open",
       amount_min: "",
       amount_max: "",
       deadline: "",
@@ -871,82 +892,79 @@ export default function FunderDashboard() {
 
             {/* Processed Results */}
             {isProcessed && (
-              <div className="space-y-6 max-w-4xl">
-                <div className="bg-green-50 border border-green-200 rounded-xl p-6">
-                  <div className="flex items-center gap-3 mb-4">
+              <div className="space-y-6 max-w-4xl mx-auto" data-processed-section>
+                <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
+                  <div className="flex items-center justify-center gap-3 mb-4">
                     <CheckCircle className="h-6 w-6 text-green-600" />
                     <h3 className="text-lg font-semibold text-green-900">Grant Processing Complete!</h3>
                   </div>
                   <p className="text-green-700 mb-4">
                     We've successfully analyzed your grant document and auto-generated the following:
                   </p>
-                  <div className="flex gap-4">
-                    <Button onClick={handleSaveGrant} className="bg-green-600 hover:bg-green-700 text-white">
-                      Save Grant
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" onClick={() => setIsProcessed(false)}>
-                      Make Changes
-                    </Button>
-                  </div>
                 </div>
 
-                <div className="grid lg:grid-cols-2 gap-6">
-                  {/* Tags Section */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Tag className="h-5 w-5 text-blue-600" />
-                        Auto-Generated Tags
-                      </CardTitle>
-                      <CardDescription>These tags help match your grant with relevant startups</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {MOCK_TAGS.map((tag) => (
-                          <Badge
-                            key={tag}
-                            variant="secondary"
-                            className="cursor-pointer hover:bg-blue-100 hover:text-blue-800"
-                          >
-                            {tag}
-                          </Badge>
-                        ))}
+                {/* Merged Grant Details and Tags */}
+                <Card className="max-w-4xl mx-auto">
+                  <CardHeader className="text-center">
+                    <CardTitle className="flex items-center justify-center gap-2">
+                      <FileText className="h-5 w-5 text-blue-600" />
+                      Grant Details and Tags
+                    </CardTitle>
+                    <CardDescription>Review and edit the extracted information</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-8">
+                    {/* Details Form */}
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="title">Title *</Label>
+                        <Input id="title" value={formData.title} onChange={(e) => handleInputChange("title", e.target.value)} className="bg-gray-100 border-0 rounded-lg shadow-none" />
                       </div>
-                      <Button variant="outline" size="sm">
-                        <Tag className="mr-2 h-4 w-4" />
-                        Edit Tags
-                      </Button>
-                    </CardContent>
-                  </Card>
+                      <div className="space-y-2">
+                        <Label htmlFor="issuer">Issuer *</Label>
+                        <Input id="issuer" value={formData.issuer} onChange={(e) => handleInputChange("issuer", e.target.value)} className="bg-gray-100 border-0 rounded-lg shadow-none" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="country">Country *</Label>
+                          <Input id="country" value={formData.country} onChange={(e) => handleInputChange("country", e.target.value)} className="bg-gray-100 border-0 rounded-lg shadow-none" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="status">Status *</Label>
+                          <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
+                            <SelectTrigger id="status" className="bg-gray-100 border-0 rounded-lg shadow-none">
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="open">Open</SelectItem>
+                              <SelectItem value="closed">Closed</SelectItem>
+                              <SelectItem value="upcoming">Upcoming</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="amount_min">Min Amount (RM) *</Label>
+                          <Input id="amount_min" type="number" value={formData.amount_min} onChange={(e) => handleInputChange("amount_min", e.target.value)} className="bg-gray-100 border-0 rounded-lg shadow-none" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="amount_max">Max Amount (RM) *</Label>
+                          <Input id="amount_max" type="number" value={formData.amount_max} onChange={(e) => handleInputChange("amount_max", e.target.value)} className="bg-gray-100 border-0 rounded-lg shadow-none" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="deadline">Deadline *</Label>
+                        <Input id="deadline" type="date" value={formData.deadline} onChange={(e) => handleInputChange("deadline", e.target.value)} className="bg-gray-100 border-0 rounded-lg shadow-none" />
+                      </div>
+                      <div className="text-center">
+                        <Button onClick={handleSaveGrant} className="bg-green-500 hover:bg-green-600 text-white rounded-xl">
+                          Save Grant
+                        </Button>
+                      </div>
+                    </div>
 
-                  {/* Checklist Section */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <CheckCircle className="h-5 w-5 text-blue-600" />
-                        Application Checklist
-                      </CardTitle>
-                      <CardDescription>Requirements extracted from your grant document</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {MOCK_CHECKLIST.map((item, index) => (
-                          <div key={index} className="flex items-center justify-between">
-                            <span className="text-sm">{item.item}</span>
-                            <Badge variant={item.required ? "default" : "secondary"}>
-                              {item.required ? "Required" : "Optional"}
-                            </Badge>
-                          </div>
-                        ))}
-                      </div>
-                      <Button variant="outline" size="sm" className="mt-4">
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        Edit Checklist
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </div>
+                  </CardContent>
+                </Card>
               </div>
             )}
           </TabsContent>

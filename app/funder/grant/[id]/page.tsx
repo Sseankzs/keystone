@@ -322,7 +322,7 @@ export default function GrantDetails() {
                   <div className="flex items-center gap-2">
                     <Badge 
                       variant={currentGrant?.status === 'open' ? 'default' : currentGrant?.status === 'closed' ? 'destructive' : 'secondary'}
-                      className={currentGrant?.status === 'open' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}
+                      className={currentGrant?.status === 'open' ? 'bg-blue-600 hover:bg-blue-700 text-white py-1.5' : 'py-1.5'}
                     >
                       {currentGrant?.status?.charAt(0).toUpperCase() + currentGrant?.status?.slice(1)}
                     </Badge>
@@ -350,7 +350,7 @@ export default function GrantDetails() {
                 <h2 className="text-lg font-medium text-gray-900">Auto-generated Tags</h2>
                 {!isEditingTags ? (
                   <Button variant="ghost" size="sm" onClick={() => setIsEditingTags(true)} className="!p-0 text-gray-600 hover:text-gray-900">
-                    Edit Tags
+                    Edit
                   </Button>
                 ) : (
                   <Button 
@@ -367,7 +367,7 @@ export default function GrantDetails() {
               <div className="flex flex-wrap gap-2">
                 {sectorTags.map((tag: string, index: number) => (
                   <div key={index} className="flex items-center">
-                    <Badge className="bg-blue-50 text-blue-700 rounded-md font-mono">
+                    <Badge className="bg-blue-50 text-blue-700 rounded-md font-mono py-1.5 px-2">
                       {tag}
                     </Badge>
                     {isEditingTags && (
@@ -412,7 +412,7 @@ export default function GrantDetails() {
                 <h2 className="text-lg font-medium text-gray-900">Eligibility Rules</h2>
                 {!isEditingRules ? (
                   <Button variant="ghost" size="sm" onClick={() => setIsEditingRules(true)} className="!p-0 text-gray-600 hover:text-gray-900">
-                    Edit Rules
+                    Edit
                   </Button>
                 ) : (
                   <Button 
@@ -473,7 +473,7 @@ export default function GrantDetails() {
                 <h2 className="text-lg font-medium text-gray-900">Required Documents</h2>
                 {!isEditingDocs ? (
                   <Button variant="ghost" size="sm" onClick={() => setIsEditingDocs(true)} className="!p-0 text-gray-600 hover:text-gray-900">
-                    Edit Documents
+                    Edit
                   </Button>
                 ) : (
                   <Button 
