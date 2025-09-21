@@ -1,11 +1,12 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Building2,
   Calendar,
@@ -18,7 +19,11 @@ import {
   Plus,
   X,
   ChevronRight,
-  Circle
+  Circle,
+  Send,
+  MessageCircle,
+  Bot,
+  User
 } from "lucide-react"
 
 // Mock grants list for sidebar - in real app, this would come from API
@@ -62,7 +67,7 @@ const MOCK_GRANTS = [
 // Mock data - in real app, this would come from API based on params.id
 const GRANT_DATA = {
   "1": {
-    grant_id: "MDEC-2024-001",
+    grant_id: "3bbf836b-78e1-4e26-b5a6-eb3672c16fc5", 
     title: "Malaysia Digital Economy Corporation (MDEC) Digital Innovation Fund",
     issuer: "Malaysia Digital Economy Corporation",
     country: "Malaysia",
@@ -144,6 +149,22 @@ const GRANT_DATA = {
   }
 }
 
+// Chat message types
+interface ChatMessage {
+  id: string
+  content: string
+  sender: 'user' | 'assistant'
+  timestamp: Date
+}
+
+// Chat API response type
+interface ChatResponse {
+  statusCode: number
+  body: {
+    message: string
+    conversation_id?: string
+  }
+}
 
 export default function GrantDetails() {
   const params = useParams()
@@ -161,6 +182,14 @@ export default function GrantDetails() {
   const [newTag, setNewTag] = useState("")
   const [newRule, setNewRule] = useState("")
   const [newDoc, setNewDoc] = useState("")
+
+  // Chat state
+  const [showChat, setShowChat] = useState(false)
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [newMessage, setNewMessage] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [conversationId, setConversationId] = useState<string | null>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Functions to handle adding and removing items
   const addTag = () => {
@@ -195,6 +224,142 @@ export default function GrantDetails() {
   const removeRequiredDocument = (index: number) => {
     setRequiredDocuments(requiredDocuments.filter((_, i) => i !== index))
   }
+
+  // Chat functions
+  const initializeChat = async () => {
+    if (!currentGrant) return
+
+    setIsLoading(true)
+    try {
+      console.log('Initializing chat for grant ID:', currentGrant.grant_id)
+
+      // Call the chat API with just the grant_id - let the backend fetch from DynamoDB
+      const response = await fetch('https://097xydx820.execute-api.ap-southeast-1.amazonaws.com/dev/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          grant_id: currentGrant.grant_id,
+          message: "Hello! I'm here to help you with questions about this grant opportunity.",
+          conversation_id: conversationId
+        })
+      })
+
+      console.log('Chat API response status:', response.status)
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data: ChatResponse = await response.json()
+      console.log('Chat API response data:', data)
+      
+      if (data.statusCode === 200) {
+        // Add the assistant's initial message from the API
+        const initialMessage: ChatMessage = {
+          id: Date.now().toString(),
+          content: data.body.message,
+          sender: 'assistant',
+          timestamp: new Date()
+        }
+        
+        setMessages([initialMessage])
+        setConversationId(data.body.conversation_id || null)
+        setShowChat(true)
+      } else {
+        throw new Error(data.body?.message || 'Failed to initialize chat')
+      }
+    } catch (error) {
+      console.error('Error initializing chat:', error)
+      // Add error message
+      const errorMessage: ChatMessage = {
+        id: Date.now().toString(),
+        content: "Sorry, I'm having trouble connecting to the chat service. Please try again later.",
+        sender: 'assistant',
+        timestamp: new Date()
+      }
+      setMessages([errorMessage])
+      setShowChat(true)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const sendMessage = async () => {
+    if (!newMessage.trim() || isLoading) return
+
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      content: newMessage.trim(),
+      sender: 'user',
+      timestamp: new Date()
+    }
+
+    setMessages(prev => [...prev, userMessage])
+    setNewMessage("")
+    setIsLoading(true)
+
+    try {
+      console.log('Sending message:', userMessage.content, 'Conversation ID:', conversationId)
+
+      const response = await fetch('https://097xydx820.execute-api.ap-southeast-1.amazonaws.com/dev/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: userMessage.content,
+          conversation_id: conversationId
+        })
+      })
+
+      console.log('Send message API response status:', response.status)
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data: ChatResponse = await response.json()
+      console.log('Send message API response data:', data)
+      
+      if (data.statusCode === 200) {
+        const assistantMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          content: data.body.message,
+          sender: 'assistant',
+          timestamp: new Date()
+        }
+        setMessages(prev => [...prev, assistantMessage])
+        setConversationId(data.body.conversation_id || conversationId)
+      } else {
+        throw new Error(data.body?.message || 'Failed to send message')
+      }
+    } catch (error) {
+      console.error('Error sending message:', error)
+      const errorMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        content: `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
+        sender: 'assistant',
+        timestamp: new Date()
+      }
+      setMessages(prev => [...prev, errorMessage])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      sendMessage()
+    }
+  }
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
 
 
   if (!grant) {
@@ -328,6 +493,16 @@ export default function GrantDetails() {
                   </div>
                 </div>
                 <div className="flex gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={initializeChat}
+                    disabled={isLoading}
+                    className="text-green-600 hover:text-green-700"
+                  >
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    {isLoading ? "Starting Chat..." : "Start Chat with SME"}
+                  </Button>
                   <Button variant="ghost" size="sm">
                     <Upload className="h-4 w-4 mr-2" />
                     Upload Document
@@ -526,6 +701,95 @@ export default function GrantDetails() {
                 )}
               </div>
             </div>
+
+            {/* Chat Interface */}
+            {showChat && (
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-medium text-gray-900">SME Chat Assistant</h2>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setShowChat(false)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                <div className="bg-white rounded-xl border border-gray-200 h-96 flex flex-col">
+                  {/* Messages Area */}
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    {messages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div
+                          className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                            message.sender === 'user'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-100 text-gray-900'
+                          }`}
+                        >
+                          <div className="flex items-start gap-2">
+                            {message.sender === 'assistant' && (
+                              <Bot className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                            )}
+                            {message.sender === 'user' && (
+                              <User className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                            )}
+                            <div className="flex-1">
+                              <p className="text-sm">{message.content}</p>
+                              <p className="text-xs opacity-70 mt-1">
+                                {message.timestamp.toLocaleTimeString()}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {isLoading && (
+                      <div className="flex justify-start">
+                        <div className="bg-gray-100 text-gray-900 px-4 py-2 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <Bot className="h-4 w-4" />
+                            <div className="flex space-x-1">
+                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <div ref={messagesEndRef} />
+                  </div>
+                  
+                  {/* Input Area */}
+                  <div className="border-t border-gray-200 p-4">
+                    <div className="flex gap-2">
+                      <Textarea
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        placeholder="Ask questions about this grant..."
+                        className="flex-1 resize-none"
+                        rows={2}
+                        disabled={isLoading}
+                      />
+                      <Button
+                        onClick={sendMessage}
+                        disabled={!newMessage.trim() || isLoading}
+                        className="px-4"
+                      >
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
           </div>
         </div>

@@ -126,6 +126,7 @@ const MOCK_GRANTS = [
 const GRANT_DATA = {
   "1": {
     id: "1",
+    grant_id: "3bbf836b-78e1-4e26-b5a6-eb3672c16fc5",
     title: "Malaysia Digital Economy Corporation (MDEC) Digital Innovation Fund",
     issuer: "Malaysia Digital Economy Corporation",
     maxAmount: "RM 2,500,000",
@@ -183,6 +184,7 @@ const GRANT_DATA = {
   },
   "2": {
     id: "2",
+    grant_id: "grant-2-placeholder",
     title: "Malaysian Technology Development Corporation (MTDC) Technology Commercialisation Fund",
     issuer: "Malaysian Technology Development Corporation",
     maxAmount: "RM 750,000",
@@ -239,6 +241,7 @@ const GRANT_DATA = {
   },
   "3": {
     id: "3",
+    grant_id: "grant-3-placeholder",
     title: "Malaysian Green Technology Corporation (MGTC) Green Technology Fund",
     issuer: "Malaysian Green Technology Corporation",
     maxAmount: "RM 1,200,000",
@@ -538,6 +541,15 @@ interface ChatMessage {
   timestamp: Date
 }
 
+// Chat API response type
+interface ChatResponse {
+  statusCode: number
+  body: {
+    message: string
+    conversation_id?: string
+  }
+}
+
 const CATEGORY_COLORS = {
   documents: "bg-blue-100 text-blue-800",
   business: "bg-green-100 text-green-800",
@@ -601,6 +613,8 @@ export default function GrantDetailPage() {
   const [inputMessage, setInputMessage] = useState("")
   const [isTyping, setIsTyping] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
+  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [isTodoCollapsed, setIsTodoCollapsed] = useState(false)
 
@@ -669,7 +683,7 @@ export default function GrantDetailPage() {
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isTyping])
+  }, [messages, isTyping, isLoading])
 
   // Effect to determine if the task text is multi-line
   useEffect(() => {
@@ -685,8 +699,82 @@ export default function GrantDetailPage() {
   const totalCount = checklistItems.length
   const progressPercentage = (completedCount / totalCount) * 100
 
+  // Initialize chat with welcome message
+  const initializeChat = async () => {
+    if (!currentGrant || messages.length > 0) return
+
+    setIsLoading(true)
+    try {
+      console.log('Initializing chat for hardcoded grant ID: MDEC-2024-001')
+
+      const response = await fetch('https://097xydx820.execute-api.ap-southeast-1.amazonaws.com/dev/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          grant_id: "MDEC-2024-001",
+          message: "Hello! I'm here to help you with questions about this grant opportunity.",
+          conversation_id: conversationId
+        })
+      })
+
+      console.log('Chat API response status:', response.status)
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data: ChatResponse = await response.json()
+      console.log('Chat API response data:', data)
+      
+      if (data.statusCode === 200) {
+        const welcomeMessage: ChatMessage = {
+          id: Date.now().toString(),
+          content: data.body.message,
+          sender: "assistant",
+          timestamp: new Date()
+        }
+        
+        setMessages([welcomeMessage])
+        setConversationId(data.body.conversation_id || null)
+      } else {
+        // Don't throw error for 200 status, just log it
+        console.warn('Unexpected response structure:', data)
+        const welcomeMessage: ChatMessage = {
+          id: Date.now().toString(),
+          content: data.body?.message || "Hello! I'm here to help you with questions about this grant opportunity.",
+          sender: "assistant",
+          timestamp: new Date()
+        }
+        
+        setMessages([welcomeMessage])
+        setConversationId(data.body?.conversation_id || null)
+      }
+    } catch (error) {
+      console.error('Error initializing chat:', error)
+      // Don't add fallback - let the error show
+      const errorMessage: ChatMessage = {
+        id: Date.now().toString(),
+        content: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        sender: "assistant",
+        timestamp: new Date()
+      }
+      setMessages([errorMessage])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Initialize chat when component mounts
+  useEffect(() => {
+    if (currentGrant && messages.length === 0) {
+      initializeChat()
+    }
+  }, [currentGrant])
+
   const sendMessage = async () => {
-    if (!inputMessage.trim()) return
+    if (!inputMessage.trim() || !currentGrant) return
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
@@ -696,19 +784,72 @@ export default function GrantDetailPage() {
     }
 
     setMessages((prev) => [...prev, userMessage])
+    const currentInput = inputMessage
     setInputMessage("")
     setIsTyping(true)
+    setIsLoading(true)
 
-    setTimeout(() => {
+    try {
+      console.log('Sending message to chat API for hardcoded grant ID: MDEC-2024-001')
+
+      const response = await fetch('https://097xydx820.execute-api.ap-southeast-1.amazonaws.com/dev/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          grant_id: "MDEC-2024-001",
+          message: currentInput,
+          conversation_id: conversationId
+        })
+      })
+
+      console.log('Chat API response status:', response.status)
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data: ChatResponse = await response.json()
+      console.log('Chat API response data:', data)
+      
+      if (data.statusCode === 200) {
+        const assistantMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          content: data.body.message,
+          sender: "assistant",
+          timestamp: new Date(),
+        }
+        
+        setMessages((prev) => [...prev, assistantMessage])
+        setConversationId(data.body.conversation_id || conversationId)
+      } else {
+        // Don't throw error for 200 status, just use the response
+        console.warn('Unexpected response structure:', data)
+        const assistantMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          content: data.body?.message || generateResponse(currentInput),
+          sender: "assistant",
+          timestamp: new Date(),
+        }
+        
+        setMessages((prev) => [...prev, assistantMessage])
+        setConversationId(data.body?.conversation_id || conversationId)
+      }
+    } catch (error) {
+      console.error('Error sending message:', error)
+      // Don't fallback - show the actual error
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        content: generateResponse(inputMessage),
+        content: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
         sender: "assistant",
         timestamp: new Date(),
       }
       setMessages((prev) => [...prev, assistantMessage])
+    } finally {
       setIsTyping(false)
-    }, 1500)
+      setIsLoading(false)
+    }
   }
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1129,7 +1270,7 @@ export default function GrantDetailPage() {
                       )}
                     </div>
                   ))}
-                  {isTyping && (
+                  {(isTyping || isLoading) && (
                     <div className="flex justify-start">
                       <div className="bg-gray-100 text-gray-900 px-4 py-2 rounded-full">
                         <div className="flex space-x-1">
@@ -1228,10 +1369,10 @@ export default function GrantDetailPage() {
                       <div className="absolute bottom-2 right-2">
                         <button
                           onClick={sendMessage}
-                          disabled={!inputMessage.trim() || isTyping}
+                          disabled={!inputMessage.trim() || isTyping || isLoading}
                           className="w-6 h-6 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 rounded-full flex items-center justify-center transition-all duration-200 disabled:cursor-not-allowed"
                         >
-                          {isTyping ? (
+                          {(isTyping || isLoading) ? (
                             <div className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
                           ) : (
                             <ArrowUp className="h-4 w-4 text-white" />
@@ -1243,10 +1384,10 @@ export default function GrantDetailPage() {
                       <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
                         <button
                           onClick={sendMessage}
-                          disabled={!inputMessage.trim() || isTyping}
+                          disabled={!inputMessage.trim() || isTyping || isLoading}
                           className="w-6 h-6 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 rounded-full flex items-center justify-center transition-all duration-200 disabled:cursor-not-allowed"
                         >
-                          {isTyping ? (
+                          {(isTyping || isLoading) ? (
                             <div className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
                           ) : (
                             <ArrowUp className="h-4 w-4 text-white" />
