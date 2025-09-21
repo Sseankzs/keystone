@@ -349,7 +349,7 @@ export default function GrantDetails() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-medium text-gray-900">Auto-generated Tags</h2>
                 {!isEditingTags ? (
-                  <Button variant="ghost" size="sm" onClick={() => setIsEditingTags(true)} className="!p-0 text-gray-600 hover:text-gray-900">
+                  <Button variant="ghost" size="sm" onClick={() => setIsEditingTags(true)} className="!p-0 text-gray-600 hover:text-gray-900 pr-1">
                     Edit
                   </Button>
                 ) : (
@@ -411,7 +411,7 @@ export default function GrantDetails() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-medium text-gray-900">Eligibility Rules</h2>
                 {!isEditingRules ? (
-                  <Button variant="ghost" size="sm" onClick={() => setIsEditingRules(true)} className="!p-0 text-gray-600 hover:text-gray-900">
+                  <Button variant="ghost" size="sm" onClick={() => setIsEditingRules(true)} className="!p-0 text-gray-600 hover:text-gray-900 pr-1">
                     Edit
                   </Button>
                 ) : (
@@ -472,7 +472,7 @@ export default function GrantDetails() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-medium text-gray-900">Required Documents</h2>
                 {!isEditingDocs ? (
-                  <Button variant="ghost" size="sm" onClick={() => setIsEditingDocs(true)} className="!p-0 text-gray-600 hover:text-gray-900">
+                  <Button variant="ghost" size="sm" onClick={() => setIsEditingDocs(true)} className="!p-0 text-gray-600 hover:text-gray-900 pr-1">
                     Edit
                   </Button>
                 ) : (
@@ -491,7 +491,6 @@ export default function GrantDetails() {
                 {requiredDocuments.map((document, index) => (
                   <div key={index} className="flex items-center gap-3 group pb-2 border-b border-gray-100 last:border-b-0">
                     <span className="text-sm font-medium text-gray-900">{document}</span>
-                    <Badge variant="destructive" className="text-xs">Required</Badge>
                     {isEditingDocs && (
                       <Button
                         variant="ghost"
