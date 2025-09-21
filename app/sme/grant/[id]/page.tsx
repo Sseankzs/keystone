@@ -49,7 +49,7 @@ import { CircularProgress } from "@/components/ui/circular-progress"
 enum IslandMode {
   DEFAULT = 'Default',
   TODO_ONLY = 'TodoOnly',
-  FULL_EXPANDED = 'FullExpanded',
+  FULL_EXPANDED = 'FullExpanded', // Keeping this for the type definition even if not used.
 }
 
 // Scene type definitions
@@ -70,7 +70,7 @@ type FullExpandedIslandScene<Name extends string> = SharedIslandScene<Name> & {
 
 type IslandScene<Name extends string = string> =
   | TodoOnlyIslandScene<Name>
-  | FullExpandedIslandScene<Name>
+  // | FullExpandedIslandScene<Name> // Removed as per previous instructions
 
 // Props type for Dynamic Island
 type DynamicIslandProps<Name extends string, T extends IslandScene<Name>> = {
@@ -352,6 +352,8 @@ export default function GrantDetailPage() {
   const [isPillActive, setIsPillActive] = useState(false)
   const [expansionStage, setExpansionStage] = useState<0 | 1 | 2>(0) // 0: collapsed, 1: todo only, 2: full
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [isMultiLineTask, setIsMultiLineTask] = useState(false);
+  const taskTextRef = useRef<HTMLSpanElement>(null);
 
   // Next steps functionality from momentum design
   const [nextSteps, setNextSteps] = useState(currentGrant?.nextSteps || [])
@@ -359,53 +361,32 @@ export default function GrantDetailPage() {
   const [showSuggested, setShowSuggested] = useState(true)
 
   // Scene definitions for dynamic island
-  const scenes: IslandScene<string>[] = [
+  const scenes: TodoOnlyIslandScene<string>[] = [ // Changed type to only TodoOnlyIslandScene
     {
       name: 'todoOnly',
       mode: IslandMode.TODO_ONLY,
-      content: (
-        <div className="flex items-center justify-between w-full px-4">
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-              <CheckCircle2 className="h-3 w-3 text-white" />
+      content: (() => {
+        const firstIncompleteTask = nextSteps.find(step => !step.completed);
+        return (
+          <div className="flex items-center justify-between w-full px-4">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <CheckCircle2 className="h-5 w-5 text-white flex-shrink-0" />
+              {firstIncompleteTask ? (
+                <span ref={taskTextRef} className="text-sm font-medium text-white text-left flex-1 min-w-0 max-h-[60px] overflow-hidden leading-tight">
+                  {firstIncompleteTask.text}
+                </span>
+              ) : (
+                <span className="text-sm font-medium text-white text-left flex-1 min-w-0">All tasks completed!</span>
+              )}
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-white">Tasks</span>
-              <span className="text-xs text-white/70">{nextSteps.filter(s => s.completed).length}/{nextSteps.length}</span>
+            <div className="flex items-center flex-shrink-0">
+              <ChevronRight className="h-4 w-4 text-white/60" />
             </div>
           </div>
-          <div className="flex items-center">
-            <ChevronDown className="h-4 w-4 text-white/60" />
-          </div>
-        </div>
-      ),
+        );
+      })(),
     },
-    {
-      name: 'fullExpanded',
-      mode: IslandMode.FULL_EXPANDED,
-      left: (
-        <div className="flex items-center gap-3">
-          <div className="w-7 h-7 bg-white/20 rounded-full flex items-center justify-center">
-            <Target className="h-3.5 w-3.5 text-white" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-white">Strategy</p>
-            <p className="text-xs text-white/70 truncate max-w-[120px]">{currentGrant?.playbook}</p>
-          </div>
-        </div>
-      ),
-      right: (
-          <div className="flex items-center gap-3">
-          <div className="w-7 h-7 bg-white/20 rounded-full flex items-center justify-center">
-            <CheckCircle2 className="h-3.5 w-3.5 text-white" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-white">Tasks</p>
-            <p className="text-xs text-white/70">{nextSteps.filter(s => s.completed).length}/{nextSteps.length}</p>
-          </div>
-        </div>
-      ),
-    },
+    // Removed the FULL_EXPANDED scene as it's no longer needed.
   ]
 
   // Handle scene transitions
@@ -429,6 +410,13 @@ export default function GrantDetailPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isTyping])
+
+  // Effect to determine if the task text is multi-line
+  useEffect(() => {
+    if (taskTextRef.current && currentMode === IslandMode.TODO_ONLY) {
+      setIsMultiLineTask(taskTextRef.current.scrollHeight > taskTextRef.current.clientHeight);
+    }
+  }, [taskTextRef.current, currentMode, nextSteps]); // Re-run when text content or mode changes
 
   const checklistItems = getChecklistItems(grantId)
   const eligibilityRules = getEligibilityRules(grantId)
@@ -491,31 +479,22 @@ export default function GrantDetailPage() {
 
     // Main island size animation with three stages
     const dynamicIslandStyles = useSpring(
-      currentMode === IslandMode.FULL_EXPANDED
+      currentMode === IslandMode.TODO_ONLY
         ? {
-            config: {
-              tension: 250,
-              mass: 1.5,
+            config: { // Bounce effect on expansion
+              tension: 400, // Increased tension for a snappier feel
+              mass: 0.8,    // Reduced mass for more bounce
+              friction: 20, // Added friction to dampen the bounce slightly
             },
-            width: 400,
-            height: 80,
-            borderRadius: '40px',
-            delay: transitionModeRef.current === 'fromTodoOnlyToFullExpanded' ? 50 : 0,
-          }
-        : currentMode === IslandMode.TODO_ONLY
-        ? {
-            config: {
-              tension: 300,
-              mass: 1.2,
-            },
-            width: 280,
-            height: 50,
-            borderRadius: '25px',
+            width: 380, // Width for TodoOnly mode
+            height: isMultiLineTask ? 100 : 60, // Dynamic height based on multiline task
+            borderRadius: isMultiLineTask ? '20px' : '40px', // Rounded rectangle for multiline
             delay: transitionModeRef.current === 'fromDefaultToTodoOnly' ? 0 : 100,
           }
         : {
-            config: { ...flatMove },
-            width: 200,
+            // Default mode (collapsed) - smoother collapse
+            config: { tension: 200, friction: 25 }, // Adjusted for a suitable closing animation
+            width: 200, // Reverted to pill shape
             height: 44,
             borderRadius: '22px',
             delay: transitionModeRef.current === 'fromTodoOnlyToDefault' ? 0 : 100,
@@ -524,17 +503,7 @@ export default function GrantDetailPage() {
 
     // Content fade animation with blur effects
     const contentStyles = useSpring(
-      currentMode === IslandMode.FULL_EXPANDED
-        ? {
-            config: {
-              duration: 200,
-            },
-            opacity: 1,
-            filter: 'blur(0px)',
-            transform: 'scale(1)',
-            delay: 100 + (transitionModeRef.current === 'fromTodoOnlyToFullExpanded' ? 50 : 0),
-          }
-        : currentMode === IslandMode.TODO_ONLY
+      currentMode === IslandMode.TODO_ONLY
         ? {
             config: {
               duration: 150,
@@ -545,6 +514,7 @@ export default function GrantDetailPage() {
             delay: 50,
           }
         : {
+            // Default mode (collapsed)
             config: {
               duration: 150,
             },
@@ -563,6 +533,7 @@ export default function GrantDetailPage() {
             },
             opacity: 1,
             transform: 'scale(1)',
+            transition: 'transform 0.15s ease-out'
           }
         : {
             config: {
@@ -570,6 +541,7 @@ export default function GrantDetailPage() {
             },
             opacity: 0,
             transform: 'scale(0.95)',
+            transition: 'transform 0.15s ease-out'
           }
     )
 
@@ -592,19 +564,21 @@ export default function GrantDetailPage() {
               }}
             >
               <div className="flex items-center gap-3">
-                <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-                  <Building2 className="h-3 w-3 text-white" />
-                </div>
-                <span className="text-sm font-medium text-white truncate max-w-[100px]">{currentGrant?.title}</span>
+                {/* Removed Building2 icon as requested */}
               </div>
               
               {/* Circular Progress */}
               <div className="relative w-6 h-6">
                 {(() => {
-                  const progress = nextSteps.filter(s => s.completed).length / Math.max(nextSteps.length, 1)
-                  const percentage = Math.round(progress * 100)
-                  const progressColor = percentage >= 80 ? '#10B981' : percentage >= 50 ? '#F59E0B' : '#EF4444'
+                  const completedTasks = nextSteps.filter(s => s.completed).length;
+                  const totalTasks = nextSteps.length;
+                  const incompleteTasksCount = totalTasks - completedTasks;
+
+                  const progress = completedTasks / Math.max(totalTasks, 1);
                   
+                  // Dynamic color based on incomplete tasks, if all are complete, green.
+                  const taskColor = incompleteTasksCount === 0 ? '#10B981' : '#F59E0B'; // Green if 0 incomplete, else orange
+
                   return (
                     <>
                       <svg className="w-6 h-6 transform -rotate-90" viewBox="0 0 24 24">
@@ -620,7 +594,7 @@ export default function GrantDetailPage() {
                           cx="12"
                           cy="12"
                           r="10"
-                          stroke={progressColor}
+                          stroke={taskColor}
                           strokeWidth="2"
                           fill="none"
                           strokeDasharray={`${2 * Math.PI * 10}`}
@@ -629,12 +603,12 @@ export default function GrantDetailPage() {
                         />
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-[10px] font-medium" style={{ color: progressColor }}>
-                          {percentage}
+                        <span className="text-[10px] font-medium" style={{ color: taskColor }}>
+                          {incompleteTasksCount}
                         </span>
                       </div>
                     </>
-                  )
+                  );
                 })()}
               </div>
             </animated.div>
@@ -646,57 +620,46 @@ export default function GrantDetailPage() {
               className="flex items-center w-full h-full"
               style={contentStyles}
             >
-              {currentScene?.mode === IslandMode.TODO_ONLY && 'content' in currentScene && currentScene.content}
+              {(currentScene as TodoOnlyIslandScene<string>)?.content}
             </animated.div>
           )}
-
-          {/* Full Expanded Mode */}
-          {currentMode === IslandMode.FULL_EXPANDED && (
-            <animated.div
-              className="flex items-center justify-between w-full h-full px-6"
-              style={contentStyles}
-            >
-              <div className="flex items-center gap-4">
-                {currentScene?.mode === IslandMode.FULL_EXPANDED && 'left' in currentScene && currentScene.left}
-              </div>
-              <div className="flex items-center gap-4">
-                {currentScene?.mode === IslandMode.FULL_EXPANDED && 'right' in currentScene && currentScene.right}
-              </div>
-            </animated.div>
-          )}
+          {/* Removed Full Expanded Mode as it is no longer needed */}
         </animated.div>
       </div>
-    )
-  }
+    );
+  };
 
   const handlePillClick = () => {
-    setIsPillActive(true)
+    setIsPillActive(true);
 
-    // Cycle through expansion stages: 0 -> 1 -> 2 -> 0
-    const nextStage = (expansionStage + 1) % 3
-    setExpansionStage(nextStage as 0 | 1 | 2)
+    let nextStage: 0 | 1;
+    if (expansionStage === 0) {
+      // From Default (collapsed): go to TodoOnly
+      nextStage = 1; 
+    } else { 
+      // From TodoOnly: go back to Default (collapsed)
+      nextStage = 0;
+    }
+    setExpansionStage(nextStage as 0 | 1 | 2); // Cast back to original type for now
 
     // Set scene based on expansion stage
     switch (nextStage) {
       case 0:
-        setCurrentSceneName('default')
-        setCurrentMode(IslandMode.DEFAULT)
-        break
+        setCurrentSceneName('default');
+        setCurrentMode(IslandMode.DEFAULT);
+        break;
       case 1:
-        setCurrentSceneName('todoOnly')
-        setCurrentMode(IslandMode.TODO_ONLY)
-        break
-      case 2:
-        setCurrentSceneName('fullExpanded')
-        setCurrentMode(IslandMode.FULL_EXPANDED)
-        break
+        setCurrentSceneName('todoOnly');
+        setCurrentMode(IslandMode.TODO_ONLY);
+        break;
+      // Remove case 2 (FullExpanded) as it's no longer a state
     }
 
     // Reset active state after animation
     setTimeout(() => {
-      setIsPillActive(false)
-    }, 150)
-  }
+      setIsPillActive(false);
+    }, 150);
+  };
 
   const generateResponse = (input: string): string => {
     const lowerInput = input.toLowerCase()
@@ -722,24 +685,24 @@ export default function GrantDetailPage() {
     }
 
     return "That's a great question about the EIC Accelerator! I can help you with any aspect of the application process. Feel free to ask about specific requirements, evaluation criteria, or strategies to improve your chances of success. You can also click on any to-do item to get detailed guidance on completing it."
-  }
+  };
 
   const toggleChecklistItem = (id: string) => {
     // In a real app, this would update the state and persist to backend
     console.log(`Toggling checklist item ${id}`)
-  }
+  };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
       sendMessage()
     }
-  }
+  };
 
   // Momentum design functionality
   const handleStepToggle = (id: number) => {
     setNextSteps((prev) => prev.map((step) => (step.id === id ? { ...step, completed: !step.completed } : step)))
-  }
+  };
 
   const addNewStep = () => {
     if (newStep.trim()) {
@@ -747,12 +710,12 @@ export default function GrantDetailPage() {
       setNextSteps((prev) => [...prev, { id: newId, text: newStep, completed: false }])
       setNewStep("")
     }
-  }
+  };
 
   const addSuggestedStep = (stepText: string) => {
     const newId = Math.max(...nextSteps.map((s) => s.id)) + 1
     setNextSteps((prev) => [...prev, { id: newId, text: stepText, completed: false }])
-  }
+  };
 
 
   if (!grant) {
@@ -880,7 +843,7 @@ export default function GrantDetailPage() {
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                       <MessageCircle className="h-8 w-8 text-gray-600" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Ask about this grant</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Ask about <em>{grant.title}</em></h3>
                     <p className="text-gray-600 text-sm">Get personalized guidance from our AI assistant</p>
                   </div>
                 </div>
@@ -1039,5 +1002,5 @@ export default function GrantDetailPage() {
           </div>
         </div>
       </div>
-  )
+  );
 }

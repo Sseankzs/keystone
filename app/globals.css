@@ -4,29 +4,29 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Updated color palette: grey main, white secondary, orange accent */
+  /* Updated color palette: grey main, white secondary, iOS blue accent */
   --background: oklch(1 0 0); /* Clean white background */
   --foreground: oklch(0.25 0 0); /* Dark gray text for readability */
   --card: oklch(0.98 0 0); /* Pure white card background */
   --card-foreground: oklch(0.25 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.25 0 0);
-  --primary: oklch(0.7 0.2 30); /* Vibrant orange accent (#ff4000) */
+  --primary: oklch(0.55 0.2 240); /* Tailwind blue-600 (#2563eb) */
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.95 0 0); /* Light grey secondary */
   --secondary-foreground: oklch(0.25 0 0);
   --muted: oklch(0.96 0 0); /* Very light grey muted */
   --muted-foreground: oklch(0.5 0 0);
-  --accent: oklch(0.7 0.2 30); /* Vibrant orange accent (#ff4000) */
+  --accent: oklch(0.55 0.2 240); /* Tailwind blue-600 (#2563eb) */
   --accent-foreground: oklch(1 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(1 0 0);
   --border: oklch(0.9 0 0); /* Light grey border */
   --input: oklch(0.98 0 0); /* White input background */
-  --ring: oklch(0.7 0.2 30 / 0.3);
+  --ring: oklch(0.55 0.2 240 / 0.3);
 
-  /* Custom orange highlight color */
-  --highlight: oklch(0.7 0.2 30); /* Vibrant orange highlight (#ff4000) */
+  /* Custom iOS blue highlight color */
+  --highlight: oklch(0.55 0.2 240); /* Tailwind blue-600 (#2563eb) */
 
   /* Pop colors for tags - vibrant but balanced */
   --tag-blue: oklch(0.6 0.2 240);
@@ -46,7 +46,7 @@
   --radius: 0.5rem;
   --sidebar: oklch(0.95 0 0); /* Light grey sidebar */
   --sidebar-foreground: oklch(0.25 0 0);
-  --sidebar-primary: oklch(0.7 0.2 30); /* Vibrant orange accent for sidebar (#ff4000) */
+  --sidebar-primary: oklch(0.55 0.2 240); /* Tailwind blue-600 (#2563eb) */
   --sidebar-primary-foreground: oklch(1 0 0);
 
   /* Hide scrollbars globally for seamless experience */
@@ -67,22 +67,22 @@
   --card-foreground: oklch(0.95 0 0);
   --popover: oklch(0.08 0 0);
   --popover-foreground: oklch(0.95 0 0);
-  --primary: oklch(0.7 0.2 30); /* Vibrant orange accent for dark mode (#ff4000) */
+  --primary: oklch(0.55 0.2 240); /* Tailwind blue-600 for dark mode (#2563eb) */
   --primary-foreground: oklch(0.08 0 0);
   --secondary: oklch(0.2 0 0); /* Dark grey secondary */
   --secondary-foreground: oklch(0.95 0 0);
   --muted: oklch(0.15 0 0); /* Very dark grey muted */
   --muted-foreground: oklch(0.6 0 0);
-  --accent: oklch(0.7 0.2 30); /* Vibrant orange accent (#ff4000) */
+  --accent: oklch(0.55 0.2 240); /* Tailwind blue-600 (#2563eb) */
   --accent-foreground: oklch(0.08 0 0);
   --destructive: oklch(0.6 0.2 25);
   --destructive-foreground: oklch(0.95 0 0);
   --border: oklch(0.2 0 0); /* Dark grey border */
   --input: oklch(0.15 0 0); /* Dark grey input */
-  --ring: oklch(0.7 0.2 30 / 0.3);
+  --ring: oklch(0.55 0.2 240 / 0.3);
 
-  /* Custom orange highlight color for dark mode */
-  --highlight: oklch(0.7 0.2 30); /* Vibrant orange highlight for dark mode (#ff4000) */
+  /* Custom iOS blue highlight color for dark mode */
+  --highlight: oklch(0.55 0.2 240); /* Tailwind blue-600 for dark mode (#2563eb) */
 
   /* Dark mode pop colors for tags */
   --tag-blue: oklch(0.7 0.2 240);
@@ -101,7 +101,7 @@
   --chart-5: oklch(0.7 0.18 180);
   --sidebar: oklch(0.12 0 0); /* Dark grey sidebar */
   --sidebar-foreground: oklch(0.95 0 0);
-  --sidebar-primary: oklch(0.7 0.2 30); /* Vibrant orange accent for sidebar (#ff4000) */
+  --sidebar-primary: oklch(0.55 0.2 240); /* Tailwind blue-600 (#2563eb) */
   --sidebar-primary-foreground: oklch(0.08 0 0);
   --sidebar-accent: oklch(0.2 0 0); /* Dark grey sidebar accent */
   --sidebar-accent-foreground: oklch(0.95 0 0);
@@ -266,5 +266,126 @@
   .animate-progress-fill {
     animation: progress-fill 1.2s cubic-bezier(0.4, 0, 0.2, 1);
     animation-fill-mode: forwards;
+  }
+
+  /* Slow-moving gradient animations for stats cards */
+  @keyframes gradient-shift-1 {
+    0% {
+      background-position: 0% 0%;
+    }
+    50% {
+      background-position: 100% 100%;
+    }
+    100% {
+      background-position: 0% 0%;
+    }
+  }
+
+  @keyframes gradient-shift-2 {
+    0% {
+      background-position: 0% 100%;
+    }
+    50% {
+      background-position: 100% 0%;
+    }
+    100% {
+      background-position: 0% 100%;
+    }
+  }
+
+  @keyframes gradient-shift-3 {
+    0% {
+      background-position: 100% 0%;
+    }
+    50% {
+      background-position: 0% 100%;
+    }
+    100% {
+      background-position: 100% 0%;
+    }
+  }
+
+  @keyframes gradient-shift-4 {
+    0% {
+      background-position: 100% 100%;
+    }
+    50% {
+      background-position: 0% 0%;
+    }
+    100% {
+      background-position: 100% 100%;
+    }
+  }
+
+  @keyframes gradient-shift-5 {
+    0% {
+      background-position: 50% 0%;
+    }
+    50% {
+      background-position: 50% 100%;
+    }
+    100% {
+      background-position: 50% 0%;
+    }
+  }
+
+  @keyframes gradient-shift-6 {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  .gradient-bg-1 {
+    background:
+      linear-gradient(135deg, rgba(0, 0, 0, 0.12) 0%, rgba(0, 0, 0, 0.12) 100%),
+      linear-gradient(130deg, #a8edea 0%, #fed6e3 100%);
+    background-size: 200% 200%;
+    animation: gradient-shift-1 8s ease-in-out infinite;
+  }
+
+  .gradient-bg-2 {
+    background:
+      linear-gradient(135deg, rgba(0, 0, 0, 0.12) 0%, rgba(0, 0, 0, 0.12) 100%),
+      linear-gradient(130deg, #a8edea 0%, #fed6e3 100%);
+    background-size: 200% 200%;
+    animation: gradient-shift-2 8s ease-in-out infinite;
+  }
+
+  .gradient-bg-3 {
+    background:
+      linear-gradient(135deg, rgba(0, 0, 0, 0.12) 0%, rgba(0, 0, 0, 0.12) 100%),
+      linear-gradient(130deg, #a8edea 0%, #fed6e3 100%);
+    background-size: 200% 200%;
+    animation: gradient-shift-3 8s ease-in-out infinite;
+  }
+
+  .gradient-bg-4 {
+    background:
+      linear-gradient(135deg, rgba(0, 0, 0, 0.12) 0%, rgba(0, 0, 0, 0.12) 100%),
+      linear-gradient(130deg, #a8edea 0%, #fed6e3 100%);
+    background-size: 200% 200%;
+    animation: gradient-shift-4 8s ease-in-out infinite;
+  }
+
+  .gradient-bg-5 {
+    background:
+      linear-gradient(135deg, rgba(0, 0, 0, 0.12) 0%, rgba(0, 0, 0, 0.12) 100%),
+      linear-gradient(130deg, #a8edea 0%, #fed6e3 100%);
+    background-size: 200% 200%;
+    animation: gradient-shift-5 8s ease-in-out infinite;
+  }
+
+  .gradient-bg-6 {
+    background:
+      linear-gradient(135deg, rgba(0, 0, 0, 0.12) 0%, rgba(0, 0, 0, 0.12) 100%),
+      linear-gradient(130deg, #a8edea 0%, #fed6e3 100%);
+    background-size: 200% 200%;
+    animation: gradient-shift-6 8s ease-in-out infinite;
   }
 }

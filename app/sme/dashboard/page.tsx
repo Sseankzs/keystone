@@ -737,20 +737,6 @@ export default function FundingDashboard() {
           </div>
         )}
 
-        {/* Empty State - Show when no results and no error */}
-        {!hasResults && !isLoading && !error && (
-          <div className="mt-8 text-center py-12">
-            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Target className="h-6 w-6 text-gray-400" />
-            </div>
-            <h2 className="text-lg font-medium text-gray-900 mb-2">
-              Ready to find funding?
-            </h2>
-            <p className="text-sm text-gray-600">
-              Describe your funding goals above to get started.
-            </p>
-          </div>
-        )}
       </div>
     </div>
   )
