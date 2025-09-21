@@ -543,11 +543,13 @@ interface ChatMessage {
 
 // Chat API response type
 interface ChatResponse {
-  statusCode: number
-  body: {
+  statusCode?: number
+  body?: {
     message: string
     conversation_id?: string
   }
+  message?: string
+  conversation_id?: string
 }
 
 const CATEGORY_COLORS = {
@@ -725,32 +727,66 @@ export default function GrantDetailPage() {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      const data: ChatResponse = await response.json()
+      const data = await response.json()
       console.log('Chat API response data:', data)
       
-      if (data.statusCode === 200) {
-        const welcomeMessage: ChatMessage = {
-          id: Date.now().toString(),
-          content: data.body.message,
-          sender: "assistant",
-          timestamp: new Date()
+      // Handle both API Gateway format and direct response format
+      let messageContent: string
+      let newConversationId: string | null = null
+      
+      if (data.statusCode === 200 && data.body) {
+        // API Gateway format
+        if (typeof data.body.message === 'string') {
+          messageContent = data.body.message
+        } else if (typeof data.body.message === 'object' && data.body.message.content) {
+          messageContent = data.body.message.content
+        } else if (typeof data.body.message === 'object' && data.body.message.text) {
+          messageContent = data.body.message.text
+        } else if (typeof data.body.message === 'object' && data.body.message.role) {
+          messageContent = data.body.message.content || data.body.message.text || JSON.stringify(data.body.message)
+        } else {
+          messageContent = JSON.stringify(data.body.message)
         }
-        
-        setMessages([welcomeMessage])
-        setConversationId(data.body.conversation_id || null)
+        newConversationId = data.body.conversation_id || null
+      } else if (data.message) {
+        // Direct response format (current API behavior)
+        if (typeof data.message === 'string') {
+          messageContent = data.message
+        } else if (typeof data.message === 'object') {
+          if (Array.isArray(data.message.content) && data.message.content.length > 0) {
+            // Handle content array structure like [{text: "..."}]
+            messageContent = data.message.content[0].text || data.message.content[0].content || JSON.stringify(data.message.content[0])
+          } else if (data.message.content) {
+            messageContent = data.message.content
+          } else if (data.message.text) {
+            messageContent = data.message.text
+          } else if (data.message.message) {
+            messageContent = data.message.message
+          } else if (Array.isArray(data.message) && data.message.length > 0) {
+            messageContent = data.message[0].content || data.message[0].text || JSON.stringify(data.message[0])
+          } else {
+            messageContent = JSON.stringify(data.message)
+          }
+        } else {
+          messageContent = String(data.message)
+        }
+        newConversationId = data.conversation_id || null
       } else {
-        // Don't throw error for 200 status, just log it
+        // Fallback
         console.warn('Unexpected response structure:', data)
-        const welcomeMessage: ChatMessage = {
-          id: Date.now().toString(),
-          content: data.body?.message || "Hello! I'm here to help you with questions about this grant opportunity.",
-          sender: "assistant",
-          timestamp: new Date()
-        }
-        
-        setMessages([welcomeMessage])
-        setConversationId(data.body?.conversation_id || null)
+        messageContent = "Hello! I'm here to help you with questions about this grant opportunity."
+        newConversationId = null
       }
+      
+      const welcomeMessage: ChatMessage = {
+        id: Date.now().toString(),
+        content: messageContent,
+        sender: "assistant",
+        timestamp: new Date()
+      }
+      
+      setMessages([welcomeMessage])
+      setConversationId(newConversationId)
     } catch (error) {
       console.error('Error initializing chat:', error)
       // Don't add fallback - let the error show
@@ -810,32 +846,71 @@ export default function GrantDetailPage() {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      const data: ChatResponse = await response.json()
+      const data = await response.json()
       console.log('Chat API response data:', data)
+      console.log('Message structure:', data.message)
+      console.log('Message type:', typeof data.message)
       
-      if (data.statusCode === 200) {
-        const assistantMessage: ChatMessage = {
-          id: (Date.now() + 1).toString(),
-          content: data.body.message,
-          sender: "assistant",
-          timestamp: new Date(),
+      // Handle both API Gateway format and direct response format
+      let messageContent = "I'm sorry, I couldn't process your request. Please try again."
+      let newConversationId = conversationId
+      
+      if (data.statusCode === 200 && data.body) {
+        // API Gateway format
+        if (data.body.message) {
+          if (typeof data.body.message === 'string') {
+            messageContent = data.body.message
+          } else if (typeof data.body.message === 'object' && data.body.message.content) {
+            messageContent = data.body.message.content
+          } else if (typeof data.body.message === 'object' && data.body.message.text) {
+            messageContent = data.body.message.text
+          } else if (typeof data.body.message === 'object' && data.body.message.role) {
+            // Handle role-based object structure
+            messageContent = data.body.message.content || data.body.message.text || JSON.stringify(data.body.message)
+          } else {
+            messageContent = JSON.stringify(data.body.message)
+          }
         }
-        
-        setMessages((prev) => [...prev, assistantMessage])
-        setConversationId(data.body.conversation_id || conversationId)
+        newConversationId = data.body.conversation_id || conversationId
+      } else if (data.message) {
+        // Direct response format (current API behavior)
+        if (typeof data.message === 'string') {
+          messageContent = data.message
+        } else if (typeof data.message === 'object') {
+          // Try to extract text from various possible structures
+          if (Array.isArray(data.message.content) && data.message.content.length > 0) {
+            // Handle content array structure like [{text: "..."}]
+            messageContent = data.message.content[0].text || data.message.content[0].content || JSON.stringify(data.message.content[0])
+          } else if (data.message.content) {
+            messageContent = data.message.content
+          } else if (data.message.text) {
+            messageContent = data.message.text
+          } else if (data.message.message) {
+            messageContent = data.message.message
+          } else if (Array.isArray(data.message) && data.message.length > 0) {
+            messageContent = data.message[0].content || data.message[0].text || JSON.stringify(data.message[0])
+          } else {
+            messageContent = JSON.stringify(data.message)
+          }
+        } else {
+          messageContent = String(data.message)
+        }
+        newConversationId = data.conversation_id || conversationId
       } else {
-        // Don't throw error for 200 status, just use the response
+        // Fallback
         console.warn('Unexpected response structure:', data)
-        const assistantMessage: ChatMessage = {
-          id: (Date.now() + 1).toString(),
-          content: data.body?.message || "I'm sorry, I couldn't process your request. Please try again.",
-          sender: "assistant",
-          timestamp: new Date(),
-        }
-        
-        setMessages((prev) => [...prev, assistantMessage])
-        setConversationId(data.body?.conversation_id || conversationId)
+        messageContent = "I'm sorry, I couldn't process your request. Please try again."
       }
+      
+      const assistantMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        content: messageContent,
+        sender: "assistant",
+        timestamp: new Date(),
+      }
+      
+      setMessages((prev) => [...prev, assistantMessage])
+      setConversationId(newConversationId)
     } catch (error) {
       console.error('Error sending message:', error)
       // Don't fallback - show the actual error
@@ -1234,14 +1309,14 @@ export default function GrantDetailPage() {
                     >
                       {message.sender === "user" ? (
                         <div className={`max-w-xs lg:max-w-md px-4 py-2 bg-blue-600 text-white ${
-                          message.content.split('\n').length === 1 && message.content.length < 50 
+                          String(message.content).split('\n').length === 1 && String(message.content).length < 50 
                             ? 'rounded-full' 
                             : 'rounded-2xl'
                         }`}>
-                          <p className="text-sm">{message.content}</p>
+                          <p className="text-sm">{String(message.content)}</p>
                         </div>
                       ) : (
-                        <p className="text-sm text-gray-900">{message.content}</p>
+                        <p className="text-sm text-gray-900">{String(message.content)}</p>
                       )}
                     </div>
                   ))}

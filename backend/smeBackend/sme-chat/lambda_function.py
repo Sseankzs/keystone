@@ -4,6 +4,7 @@ import logging
 from datetime import datetime
 from typing import Dict, Any, Optional
 import os
+import re
 
 # Configure logging
 logger = logging.getLogger()
@@ -15,6 +16,9 @@ bedrock = boto3.client('bedrock-runtime', region_name='us-east-1')
 # Environment variables with defaults
 BEDROCK_MODEL_ID = os.environ.get('BEDROCK_MODEL_ID', 'anthropic.claude-3-sonnet-20240229-v1:0')
 BEDROCK_REGION = os.environ.get('BEDROCK_REGION', 'us-east-1')  # Default to us-east-1
+
+# In-memory conversation storage (in production, use DynamoDB or similar)
+conversation_history = {}
 
 
 def create_response(status_code: int, body: Dict[str, Any]) -> Dict[str, Any]:
@@ -76,6 +80,107 @@ def get_hardcoded_grant_data() -> Dict[str, Any]:
         "title": "MDEC Digital Innovation Fund",
         "updated_at": "2025-09-21T10:56:48.471273"
     }
+
+def convert_markdown_to_plain_text(text: str) -> str:
+    """Convert markdown formatting to plain text"""
+    if not text:
+        return text
+    
+    # Remove markdown headers
+    text = re.sub(r'^#{1,6}\s+', '', text, flags=re.MULTILINE)
+    
+    # Remove bold and italic formatting
+    text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)  # **bold** -> bold
+    text = re.sub(r'\*(.*?)\*', r'\1', text)      # *italic* -> italic
+    text = re.sub(r'__(.*?)__', r'\1', text)      # __bold__ -> bold
+    text = re.sub(r'_(.*?)_', r'\1', text)        # _italic_ -> italic
+    
+    # Remove code blocks and inline code
+    text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)  # Code blocks
+    text = re.sub(r'`([^`]+)`', r'\1', text)                # Inline code
+    
+    # Remove links but keep the text
+    text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)    # [text](url) -> text
+    
+    # Remove list markers
+    text = re.sub(r'^\s*[-*+]\s+', '', text, flags=re.MULTILINE)  # Bullet points
+    text = re.sub(r'^\s*\d+\.\s+', '', text, flags=re.MULTILINE)  # Numbered lists
+    
+    # Remove horizontal rules
+    text = re.sub(r'^---+$', '', text, flags=re.MULTILINE)
+    text = re.sub(r'^\*\*\*+$', '', text, flags=re.MULTILINE)
+    
+    # Clean up extra whitespace
+    text = re.sub(r'\n\s*\n\s*\n', '\n\n', text)  # Multiple newlines to double
+    text = re.sub(r'^\s+', '', text, flags=re.MULTILINE)  # Leading whitespace
+    text = text.strip()
+    
+    return text
+
+def convert_json_to_plain_text(data) -> str:
+    """Convert JSON response to plain text"""
+    if isinstance(data, str):
+        try:
+            # Try to parse as JSON first
+            parsed = json.loads(data)
+            return convert_json_to_plain_text(parsed)
+        except json.JSONDecodeError:
+            # If not JSON, return as is
+            return data
+    
+    elif isinstance(data, dict):
+        # Handle dictionary responses
+        if 'content' in data:
+            if isinstance(data['content'], list) and len(data['content']) > 0:
+                # Handle content array like [{"text": "..."}]
+                if isinstance(data['content'][0], dict) and 'text' in data['content'][0]:
+                    return data['content'][0]['text']
+                else:
+                    return str(data['content'][0])
+            else:
+                return str(data['content'])
+        elif 'text' in data:
+            return str(data['text'])
+        elif 'message' in data:
+            return str(data['message'])
+        else:
+            # Extract all string values from the dictionary
+            text_parts = []
+            for key, value in data.items():
+                if isinstance(value, str) and value.strip():
+                    text_parts.append(value)
+            return ' '.join(text_parts) if text_parts else str(data)
+    
+    elif isinstance(data, list):
+        # Handle list responses
+        text_parts = []
+        for item in data:
+            if isinstance(item, str):
+                text_parts.append(item)
+            elif isinstance(item, dict):
+                text_parts.append(convert_json_to_plain_text(item))
+        return ' '.join(text_parts) if text_parts else str(data)
+    
+    else:
+        return str(data)
+
+def get_conversation_history(conversation_id: str) -> list:
+    """Get conversation history for a given conversation ID"""
+    return conversation_history.get(conversation_id, [])
+
+def add_to_conversation_history(conversation_id: str, role: str, content: str):
+    """Add a message to conversation history"""
+    if conversation_id not in conversation_history:
+        conversation_history[conversation_id] = []
+    
+    conversation_history[conversation_id].append({
+        "role": role,
+        "content": content
+    })
+    
+    # Keep only last 20 messages to prevent memory issues
+    if len(conversation_history[conversation_id]) > 20:
+        conversation_history[conversation_id] = conversation_history[conversation_id][-20:]
 
 def prepare_grant_context(grant_data: Dict[str, Any]) -> str:
     """Prepare grant context for the AI"""
@@ -143,10 +248,23 @@ APPLICATION PROCESS:
 def generate_ai_response(message: str, grant_context: str, conversation_id: str = None) -> str:
     """Generate AI response using Bedrock"""
     try:
+        # Get conversation history
+        history = get_conversation_history(conversation_id) if conversation_id else []
+        
+        # Build conversation context
+        conversation_context = ""
+        if history:
+            conversation_context = "\n\nPREVIOUS CONVERSATION:\n"
+            for msg in history[-10:]:  # Include last 10 messages
+                role = "User" if msg["role"] == "user" else "Assistant"
+                # Convert content to plain text if it's a dict/object
+                content = convert_json_to_plain_text(msg['content'])
+                conversation_context += f"{role}: {content}\n"
+        
         # Create the prompt for the AI
         prompt = f"""You are a helpful AI assistant specialized in helping SMEs understand grant opportunities. You have access to detailed information about a specific grant and should provide professional, accurate, and helpful responses.
 
-{grant_context}
+{grant_context}{conversation_context}
 
 INSTRUCTIONS:
 - Be professional and friendly in your responses
@@ -155,7 +273,8 @@ INSTRUCTIONS:
 - Help SMEs understand eligibility requirements, application processes, and key benefits
 - Provide clear, actionable advice
 - Keep responses concise but comprehensive
-- If this is the first message, introduce yourself and offer to help with grant-related questions
+- Continue the conversation naturally based on previous messages
+- Don't reintroduce yourself if this is not the first message
 
 USER MESSAGE: {message}
 
@@ -213,9 +332,24 @@ RESPONSE:"""
             # Fallback - try to extract text from any available field
             logger.warning(f"Unknown response format: {response_body}")
             ai_response = str(response_body)
+        
+        # Ensure we have a string response, not an object
+        if isinstance(ai_response, dict):
+            logger.info(f"AI response is dict, converting: {ai_response}")
+            ai_response = convert_json_to_plain_text(ai_response)
+        elif not isinstance(ai_response, str):
+            logger.info(f"AI response is not string, converting: {ai_response}")
+            ai_response = str(ai_response)
 
-        logger.info(f"Generated AI response: {ai_response}")
-        return ai_response
+        logger.info(f"AI response after initial conversion: {ai_response}")
+        logger.info(f"AI response type: {type(ai_response)}")
+
+        # Convert JSON/object to plain text first, then markdown to plain text
+        plain_text_response = convert_json_to_plain_text(ai_response)
+        plain_text_response = convert_markdown_to_plain_text(plain_text_response)
+        
+        logger.info(f"Final plain text response: {plain_text_response}")
+        return plain_text_response
 
     except Exception as e:
         logger.error(f"Error generating AI response: {str(e)}")
@@ -232,7 +366,17 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Handle CORS preflight requests
         if event.get('httpMethod') == 'OPTIONS':
             logger.info("Handling CORS preflight request")
-            return create_response(200, {'message': 'CORS preflight successful'})
+            return {
+                'statusCode': 200,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With',
+                    'Access-Control-Allow-Methods': 'POST,OPTIONS,GET',
+                    'Access-Control-Max-Age': '86400'
+                },
+                'body': json.dumps({'message': 'CORS preflight successful'})
+            }
 
         # Parse the request body
         body = json.loads(event.get('body', '{}'))
@@ -253,23 +397,53 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Prepare the context for the AI
         grant_context = prepare_grant_context(grant_details)
 
-        # Generate AI response
-        ai_response = generate_ai_response(message, grant_context, conversation_id)
-
         # Generate conversation ID if not provided
         if not conversation_id:
             conversation_id = f"conv_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{context.aws_request_id[:8]}"
 
-        return create_response(200, {
-            'message': ai_response,
-            'conversation_id': conversation_id,
-            'timestamp': datetime.now().isoformat()
-        })
+        # Add user message to conversation history
+        add_to_conversation_history(conversation_id, "user", message)
+
+        # Generate AI response
+        ai_response = generate_ai_response(message, grant_context, conversation_id)
+
+        # Ensure the response is plain text (convert any remaining JSON/objects)
+        final_response = convert_json_to_plain_text(ai_response)
+
+        # Add AI response to conversation history (store as plain text)
+        add_to_conversation_history(conversation_id, "assistant", final_response)
+
+        # Return response in the format expected by the frontend
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With',
+                'Access-Control-Allow-Methods': 'POST,OPTIONS,GET',
+                'Access-Control-Max-Age': '86400'
+            },
+            'body': json.dumps({
+                'message': final_response,
+                'conversation_id': conversation_id,
+                'timestamp': datetime.now().isoformat()
+            })
+        }
 
     except Exception as e:
         logger.error(f"Error in sme-chat lambda: {str(e)}")
-        return create_response(500, {
-            'error': 'Internal server error',
-            'message': f'Error: {str(e)}',
-            'details': str(e)
-        })
+        return {
+            'statusCode': 500,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With',
+                'Access-Control-Allow-Methods': 'POST,OPTIONS,GET',
+                'Access-Control-Max-Age': '86400'
+            },
+            'body': json.dumps({
+                'error': 'Internal server error',
+                'message': f'Error: {str(e)}',
+                'details': str(e)
+            })
+        }
