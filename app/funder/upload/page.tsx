@@ -108,14 +108,96 @@ export default function GrantUploadPage() {
     e.preventDefault()
     setIsProcessing(true)
 
-    // TODO: Upload file/URL to backend for processing
-    console.log("Processing grant:", formData)
+    try {
+      // Check if we have a file to process
+      if (!formData.file && uploadedFiles.length === 0) {
+        throw new Error("Please upload a file to process")
+      }
 
-    // Simulate processing time
-    setTimeout(() => {
+      // Use the file from formData or the first uploaded file
+      const fileToProcess = formData.file || uploadedFiles[0]
+      
+      console.log(`🚀 Processing ${fileToProcess.name} with API...`)
+      
+      // Convert file to base64
+      const fileBuffer = await fileToProcess.arrayBuffer()
+      const base64Content = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)))
+      
+      // Call your API endpoint
+      console.log(`🚀 Calling API for ${fileToProcess.name}...`)
+      const response = await fetch('https://b4lzhuuhk1.execute-api.ap-southeast-1.amazonaws.com/dev/upload-grant', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: formData.grantTitle || fileToProcess.name.replace(/\.[^/.]+$/, ""), // Use form title or filename
+          issuer: "hardcoded-issuer", // Hardcoded as requested
+          pdf_content: base64Content
+        })
+      })
+
+      console.log(`📥 Response status: ${response.status} (${response.statusText})`)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error(`❌ API Error for ${fileToProcess.name}:`, errorText)
+        throw new Error(`Failed to upload ${fileToProcess.name}: ${response.status} - ${errorText}`)
+      }
+
+      const result = await response.json()
+      console.log(`📄 Raw API response for ${fileToProcess.name}:`, result)
+      
+      // Validate that we got meaningful data back
+      if (!result || typeof result !== 'object') {
+        throw new Error(`Invalid response format for ${fileToProcess.name}: Expected object, got ${typeof result}`)
+      }
+      
+      // Check if essential fields are present
+      const hasTitle = result.title && result.title.trim() !== ''
+      const hasIssuer = result.issuer && result.issuer.trim() !== ''
+      
+      if (!hasTitle || !hasIssuer) {
+        console.error(`❌ Analysis failed for ${fileToProcess.name}: Missing essential data`)
+        console.error('Response data:', result)
+        throw new Error(`Analysis failed for ${fileToProcess.name}: Unable to extract grant information. Please check if the document contains valid grant data.`)
+      }
+      
+      // Log the structured response data
+      console.log('✅ Grant data successfully extracted:', {
+        title: result.title,
+        issuer: result.issuer,
+        country: result.country,
+        status: result.status,
+        deadline: result.deadline,
+        amount_min: result.amount_min,
+        amount_max: result.amount_max,
+        sector_tags: result.sector_tags,
+        eligibility_rules: result.eligibility_rules,
+        required_documents: result.required_documents
+      })
+
+      console.log(`✅ Successfully processed ${fileToProcess.name}`)
+      
+      // If successful, proceed to the processed view
       setIsProcessing(false)
       setIsProcessed(true)
-    }, 3000)
+      
+    } catch (error) {
+      console.error('❌ Upload process failed:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      
+      // Show more detailed error message to user
+      if (errorMessage.includes('Analysis failed')) {
+        alert(`Document Analysis Failed:\n\n${errorMessage}\n\nPlease try uploading a different document or check that your PDF contains grant information.`)
+      } else if (errorMessage.includes('Failed to upload')) {
+        alert(`API Error:\n\n${errorMessage}\n\nPlease check your internet connection and try again.`)
+      } else {
+        alert(`Upload failed: ${errorMessage}`)
+      }
+      
+      setIsProcessing(false)
+    }
   }
 
   const handleSaveGrant = () => {
@@ -325,7 +407,6 @@ export default function GrantUploadPage() {
                                 accept=".pdf,.txt,.md"
                                 onChange={handleFileChange}
                                 className="hidden"
-                                required={uploadMethod === "file"}
                               />
                             </label>
                           </p>

@@ -51,11 +51,47 @@ export default function FunderUploadPage() {
     if (uploadedFiles.length === 0) return
 
     setIsProcessing(true)
-    // Simulate processing time
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    
+    try {
+      // Process each uploaded file
+      for (const file of uploadedFiles) {
+        console.log(`Processing ${file.name}...`)
+        
+        // Convert file to base64
+        const fileBuffer = await file.arrayBuffer()
+        const base64Content = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)))
+        
+        // Call your API endpoint
+        const response = await fetch('https://b4lzhuuhk1.execute-api.ap-southeast-1.amazonaws.com/upload-grant', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            title: file.name.replace(/\.[^/.]+$/, ""), // Remove file extension for title
+            issuer: "dept-commerce-123", // You can make this dynamic later
+            pdf_content: base64Content
+          })
+        })
 
-    // Navigate to the existing onboarding page for corrections
-    router.push("/funder/onboarding")
+        if (!response.ok) {
+          throw new Error(`Failed to upload ${file.name}: ${response.status}`)
+        }
+
+        const result = await response.json()
+        console.log(`Successfully uploaded ${file.name}:`, result)
+      }
+
+      // Navigate to onboarding after successful upload
+      router.push("/funder/onboarding")
+      
+    } catch (error) {
+      console.error('Upload failed:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      alert(`Upload failed: ${errorMessage}`)
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   return (

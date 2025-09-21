@@ -14,7 +14,7 @@ s3_client = boto3.client('s3')
 TEMP_S3_BUCKET = 'sme-funding-bucket-sg-1'  # For temporary PDF storage
 BEDROCK_MODEL_ID = 'amazon.nova-pro-v1:0'  # Nova Pro
 
-def lambda_handler(event, context):
+def lambda_function(event, context):
     """
     Main Lambda handler for grant information upload with AI analysis
     """
