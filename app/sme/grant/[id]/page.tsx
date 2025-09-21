@@ -696,19 +696,50 @@ export default function GrantDetailPage() {
     }
 
     setMessages((prev) => [...prev, userMessage])
+    const currentMessage = inputMessage
     setInputMessage("")
     setIsTyping(true)
 
-    setTimeout(() => {
+    try {
+      const response = await fetch('https://bbivvo6xm4.execute-api.ap-southeast-1.amazonaws.com/dev/chat', {
+        method: 'POST',
+        mode: 'cors', // Explicitly set CORS mode
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          message: currentMessage,
+          grant_id: grantId,
+          conversation_id: null, // You can add conversation tracking later if needed
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        content: generateResponse(inputMessage),
+        content: data.message || data.body?.message || 'No response received',
         sender: "assistant",
         timestamp: new Date(),
       }
       setMessages((prev) => [...prev, assistantMessage])
+    } catch (error) {
+      console.error('Error calling chat API:', error)
+      const errorMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        content: "I'm sorry, I'm having trouble connecting to the chat service. Please try again later.",
+        sender: "assistant",
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, errorMessage])
+    } finally {
       setIsTyping(false)
-    }, 1500)
+    }
   }
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -921,31 +952,6 @@ export default function GrantDetailPage() {
     }, 150);
   };
 
-  const generateResponse = (input: string): string => {
-    const lowerInput = input.toLowerCase()
-
-    if (lowerInput.includes("trl") || lowerInput.includes("readiness")) {
-      return "For the EIC Accelerator, you need to demonstrate TRL 5-8. TRL 5 means your technology works in a relevant environment, TRL 8 means it's complete and qualified. Since you're developing AI/ML solutions, you'll need to show: 1) Working prototype, 2) Validation results, 3) Path to commercialization. What TRL level would you say you're currently at?"
-    }
-
-    if (lowerInput.includes("market") || lowerInput.includes("analysis")) {
-      return "For the EIC, your market analysis should include: 1) Total Addressable Market (TAM) size, 2) Serviceable Available Market (SAM), 3) Serviceable Obtainable Market (SOM), 4) Growth projections with data sources, 5) Competitive landscape analysis. The EIC wants to see you understand both the market opportunity and your competitive advantages."
-    }
-
-    if (lowerInput.includes("financial") || lowerInput.includes("projection")) {
-      return "Your financial projections should cover 3-5 years and include: 1) Revenue model breakdown, 2) Cost structure analysis, 3) Funding requirements and use of funds, 4) Break-even analysis, 5) Key financial metrics (burn rate, runway, etc.). The EIC will scrutinize these carefully, so make sure your assumptions are realistic and well-supported."
-    }
-
-    if (lowerInput.includes("deadline") || lowerInput.includes("timeline")) {
-      return `The deadline is ${new Date(grant.deadline).toLocaleDateString()}, which is about 3 months away. I recommend: 1) Complete all documentation by Feb 15, 2) Final review and revisions Feb 15-28, 3) Submit by March 1 to avoid last-minute issues. The EIC evaluation process takes 3-4 months, so plan accordingly.`
-    }
-
-    if (lowerInput.includes("eligible") || lowerInput.includes("eligibility")) {
-      return "Based on your AI/ML innovation focus, you should be a good fit for the EIC Accelerator! The main requirements are: EU presence (this might be a challenge), TRL 5-8, strong innovation component, clear market potential, and scalable business model. You may need to address the EU presence requirement or consider partnering with an EU entity."
-    }
-
-    return "That's a great question about the EIC Accelerator! I can help you with any aspect of the application process. Feel free to ask about specific requirements, evaluation criteria, or strategies to improve your chances of success. You can also click on any to-do item to get detailed guidance on completing it."
-  };
 
   const toggleChecklistItem = (id: string) => {
     // In a real app, this would update the state and persist to backend
