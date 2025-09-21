@@ -64,7 +64,7 @@ export default function RegisterPage() {
           </Link>
           <div className="flex items-center justify-center space-x-2 mb-4">
             <Building2 className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold">FundConnect</span>
+            <span className="text-2xl font-bold font-serif">Keystone</span>
           </div>
           <h1 className="text-2xl font-bold text-foreground">Create your account</h1>
           <p className="text-muted-foreground">Join our platform to get started</p>

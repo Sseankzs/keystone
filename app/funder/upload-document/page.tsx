@@ -103,7 +103,7 @@ export default function FunderUploadPage() {
               <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
                 <FileText className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-semibold">FundConnect</span>
+              <span className="text-xl font-semibold font-serif">Keystone</span>
             </div>
             <Button
               variant="ghost"
