@@ -68,7 +68,6 @@ export default function FunderUploadPage() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            title: file.name.replace(/\.[^/.]+$/, ""), // Remove file extension for title
             issuer: "dept-commerce-123", // You can make this dynamic later
             pdf_content: base64Content
           })

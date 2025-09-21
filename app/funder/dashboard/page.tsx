@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,41 +20,26 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-// Mock data
-const ACTIVE_GRANTS = [
-  {
-    id: "1",
-    title: "Tech Innovation Grant 2024",
-    status: "Active",
-    applications: 45,
-    budget: "$2,500,000",
-    allocated: "$750,000",
-    deadline: "March 15, 2024",
-    tags: ["Technology", "AI/ML", "Innovation"],
-  },
-  {
-    id: "2",
-    title: "Green Energy Initiative",
-    status: "Active",
-    applications: 23,
-    budget: "$1,000,000",
-    allocated: "$200,000",
-    deadline: "April 30, 2024",
-    tags: ["Clean Energy", "Sustainability", "Environment"],
-  },
-  {
-    id: "3",
-    title: "Healthcare Innovation Fund",
-    status: "Draft",
-    applications: 0,
-    budget: "$3,000,000",
-    allocated: "$0",
-    deadline: "June 1, 2024",
-    tags: ["Healthcare", "MedTech", "Innovation"],
-  },
-]
+// Types for real grant data
+interface Grant {
+  grant_id: string
+  title: string
+  issuer: string
+  status: string
+  sector_tags: string[]
+  eligibility_rules: Array<{key: string, value: string}>
+  required_documents: string[]
+  country?: string
+  deadline?: string
+  amount_min?: number
+  amount_max?: number
+  created_at: string
+  updated_at: string
+  document_s3_key?: string
+  source_url?: string
+}
 
-// Comprehensive mock data for applications
+// Mock data for applications (keeping existing mock data for applications)
 const ALL_APPLICATIONS = [
   {
     id: "1",
@@ -227,6 +212,46 @@ export default function FunderDashboard() {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
   const [categoryFilter, setCategoryFilter] = useState("all")
 
+  // Real grants data
+  const [grants, setGrants] = useState<Grant[]>([])
+  const [grantsLoading, setGrantsLoading] = useState(true)
+  const [grantsError, setGrantsError] = useState<string | null>(null)
+
+  // Current issuer - you can make this dynamic later
+  const currentIssuer = "innovation-foundation-001"
+
+  // Fetch real grants on component mount
+  useEffect(() => {
+    fetchGrants()
+  }, [])
+
+  const fetchGrants = async () => {
+    try {
+      setGrantsLoading(true)
+      setGrantsError(null)
+      
+      // Replace with your actual API endpoint URL
+      const response = await fetch(`https://ttijzyc5n5.execute-api.ap-southeast-1.amazonaws.com/dev/grants?issuer=${currentIssuer}`)
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch grants: ${response.status} ${response.statusText}`)
+      }
+      
+      const data = await response.json()
+      setGrants(data.grants || [])
+      
+      // Update stats based on real data
+      STATS.totalGrants = data.grants?.length || 0
+      STATS.activeGrants = data.grants?.filter((g: Grant) => g.status === 'open')?.length || 0
+      
+    } catch (error) {
+      console.error('Error fetching grants:', error)
+      setGrantsError(error instanceof Error ? error.message : 'Failed to fetch grants')
+    } finally {
+      setGrantsLoading(false)
+    }
+  }
+
   // Reset pagination when filters change
   React.useEffect(() => {
     setCurrentPage(1)
@@ -304,7 +329,6 @@ export default function FunderDashboard() {
 
       // Prepare the API request payload
       let requestPayload: any = {
-        title: formData.grantTitle,
         issuer: "innovation-foundation-001", // Default funder ID - could be made dynamic later
       }
 
@@ -349,24 +373,19 @@ export default function FunderDashboard() {
 
       const result = await response.json()
       
-      console.log("API Response Status:", response.status)
-      console.log("API Response Body:", result)
-
       if (response.ok) {
-        console.log(`✅ Grant ${uploadMethod === "file" ? "uploaded" : "scraped"} successfully!`)
-        console.log("Grant ID:", result.grant_id)
-        console.log("Extracted Grant Data:", result.grant_data)
-        console.log("✅ Grant automatically saved to DynamoDB Grants table")
-        console.log(`📄 Content source: ${uploadMethod === "file" ? "PDF file" : "Website URL"}`)
         
         // Show success message to user
         const sourceType = uploadMethod === "file" ? "PDF document" : "website"
-        alert(`Grant "${result.grant_data?.title || formData.grantTitle}" has been successfully created from ${sourceType} and saved!\n\nGrant ID: ${result.grant_id}`)
+        alert(`Grant "${result.grant_data?.title}" has been successfully created from ${sourceType} and saved!\n\nGrant ID: ${result.grant_id}`)
         
         // Auto-save is complete, reset form and return to overview
-        setFormData({ grantTitle: "", description: "", url: "", file: null })
+        setFormData({ url: "", file: null })
         setUploadedFiles([])
         setActiveTab("overview")
+        
+        // Refresh grants list
+        fetchGrants()
         
         // Optionally show the processed results briefly before returning to overview
         // setIsProcessed(true)
@@ -409,6 +428,31 @@ export default function FunderDashboard() {
     setFormData({ url: "", file: null })
     setUploadedFiles([])
     setActiveTab("overview")
+  }
+
+  // Helper function to format currency
+  const formatCurrency = (amount?: number) => {
+    if (!amount) return "Not specified"
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount)
+  }
+
+  // Helper function to format date
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "Not specified"
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      })
+    } catch {
+      return dateString
+    }
   }
 
   // Filter and sort applications
@@ -510,10 +554,13 @@ export default function FunderDashboard() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Active":
+      case "open":
         return "bg-green-100 text-green-800 border-green-200"
       case "Draft":
+      case "upcoming":
         return "bg-yellow-100 text-yellow-800 border-yellow-200"
       case "Closed":
+      case "closed":
         return "bg-gray-100 text-gray-800 border-gray-200"
       case "Under Review":
         return "bg-blue-100 text-blue-800 border-blue-200"
@@ -572,13 +619,15 @@ export default function FunderDashboard() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
           <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
             <div className="text-sm text-gray-600 font-medium mb-2">Total Grants</div>
-            <div className="text-2xl font-bold text-gray-900">{STATS.totalGrants}</div>
+            <div className="text-2xl font-bold text-gray-900">{grantsLoading ? "..." : grants.length}</div>
             <div className="text-xs text-gray-500 mt-1">All time</div>
           </div>
 
           <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
             <div className="text-sm text-gray-600 font-medium mb-2">Active Grants</div>
-            <div className="text-2xl font-bold text-gray-900">{STATS.activeGrants}</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {grantsLoading ? "..." : grants.filter(g => g.status === 'open').length}
+            </div>
             <div className="text-xs text-gray-500 mt-1">Currently open</div>
           </div>
 
@@ -618,25 +667,52 @@ export default function FunderDashboard() {
           <TabsContent value="overview" className="space-y-6">
             {/* Active Grants */}
             <Card>
-              <CardHeader>
-                <CardTitle>Active Grants</CardTitle>
-                <CardDescription>Your currently open funding opportunities</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Your Grants</CardTitle>
+                  <CardDescription>All grants created by your organization</CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={fetchGrants} disabled={grantsLoading}>
+                  {grantsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Refresh"}
+                </Button>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {ACTIVE_GRANTS.filter((grant) => grant.status === "Active").map((grant) => {
-                    const allocationPercentage =
-                      (Number.parseInt(grant.allocated.replace(/[$,]/g, "")) /
-                        Number.parseInt(grant.budget.replace(/[$,]/g, ""))) *
-                      100
-
-                    return (
-                      <div key={grant.id} className="border border-border rounded-lg p-4">
+                {grantsError && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+                    <p className="font-medium">Error loading grants:</p>
+                    <p className="text-sm">{grantsError}</p>
+                    <p className="text-sm mt-2">
+                      Make sure to update the API endpoint URL in the code with your actual AWS API Gateway URL.
+                    </p>
+                  </div>
+                )}
+                
+                {grantsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                    <span className="ml-2 text-gray-600">Loading grants...</span>
+                  </div>
+                ) : grants.length === 0 ? (
+                  <div className="text-center py-8">
+                    <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No grants found</h3>
+                    <p className="text-gray-600 mb-4">
+                      {grantsError ? "Unable to load grants." : "You haven't created any grants yet."}
+                    </p>
+                    <Button onClick={() => setActiveTab("upload")}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create Your First Grant
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {grants.map((grant) => (
+                      <div key={grant.grant_id} className="border border-border rounded-lg p-4">
                         <div className="flex items-start justify-between mb-3">
                           <div>
                             <h3 className="font-semibold">{grant.title}</h3>
                             <div className="flex items-center gap-2 mt-1">
-                              {grant.tags.map((tag) => (
+                              {grant.sector_tags?.map((tag) => (
                                 <Badge key={tag} variant="secondary" className="text-xs">
                                   {tag}
                                 </Badge>
@@ -644,33 +720,30 @@ export default function FunderDashboard() {
                             </div>
                           </div>
                           <div className="text-right">
-                            <Badge className={`${getStatusColor(grant.status)} whitespace-nowrap`}>{grant.status}</Badge>
-                            <div className="text-sm text-muted-foreground mt-1">{grant.applications} applications</div>
+                            <Badge className={`${getStatusColor(grant.status)} whitespace-nowrap`}>
+                              {grant.status === 'open' ? 'Active' : grant.status}
+                            </Badge>
+                            <div className="text-sm text-muted-foreground mt-1">
+                              Created {formatDate(grant.created_at)}
+                            </div>
                           </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4 mb-3">
                           <div>
-                            <div className="text-sm text-muted-foreground">Total Budget</div>
-                            <div className="font-semibold">{grant.budget}</div>
+                            <div className="text-sm text-muted-foreground">Min Amount</div>
+                            <div className="font-semibold">{formatCurrency(grant.amount_min)}</div>
                           </div>
                           <div>
-                            <div className="text-sm text-muted-foreground">Allocated</div>
-                            <div className="font-semibold">{grant.allocated}</div>
+                            <div className="text-sm text-muted-foreground">Max Amount</div>
+                            <div className="font-semibold">{formatCurrency(grant.amount_max)}</div>
                           </div>
-                        </div>
-
-                        <div className="mb-3">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm font-medium">Budget Allocation</span>
-                            <span className="text-sm text-muted-foreground">{Math.round(allocationPercentage)}%</span>
-                          </div>
-                          <Progress value={allocationPercentage} className="h-2" />
                         </div>
 
                         <div className="flex items-center justify-between">
                           <div className="text-sm text-muted-foreground">
-                            <strong>Deadline:</strong> {grant.deadline}
+                            <strong>Deadline:</strong> {formatDate(grant.deadline)}
+                            {grant.country && <span className="ml-4"><strong>Country:</strong> {grant.country}</span>}
                           </div>
                           <div className="flex gap-2">
                             <Button variant="outline" size="sm">
@@ -684,9 +757,9 @@ export default function FunderDashboard() {
                           </div>
                         </div>
                       </div>
-                    )
-                  })}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 

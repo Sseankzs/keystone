@@ -44,19 +44,23 @@ def lambda_handler(event, context):
             body = event
         
         # Extract required fields
-        title = body.get('title')
+        title = body.get('title')  # Optional, will be extracted by AI if not provided
         issuer = body.get('issuer')  # This should be the funder_id
         pdf_content = body.get('pdf_content')  # Base64 encoded PDF
         
-        if not all([title, issuer, pdf_content]):
+        if not all([issuer, pdf_content]):
             return create_response(400, {
-                'error': 'Missing required fields: title, issuer, pdf_content'
+                'error': 'Missing required fields: issuer, pdf_content'
             })
         
         # Generate unique grant ID
         grant_id = str(uuid.uuid4())
         
-        logger.info(f"Processing grant upload: {grant_id} - {title}")
+        # If no title provided, let AI extract it from document content
+        if not title:
+            title = None  # Will be extracted by AI from document content
+        
+        logger.info(f"Processing grant upload: {grant_id} - {'AI will extract title' if not title else title}")
         
         # Decode PDF content
         try:
@@ -75,7 +79,7 @@ def lambda_handler(event, context):
             Metadata={
                 'grant_id': grant_id,
                 'issuer': issuer,
-                'title': title,
+                'title': title or 'AI-extracted',
                 'uploaded_at': datetime.utcnow().isoformat()
             }
         )
@@ -141,12 +145,24 @@ def extract_grant_info_with_bedrock(text: str, title: str, issuer: str) -> Dict[
     Use AWS Bedrock to extract structured grant information from text
     """
     
+    # Define the predefined sector list
+    sector_list = [
+        "Agriculture", "Forestry", "Fisheries", "Mining & Quarrying", "Food & Beverage Manufacturing",
+        "Textiles & Apparel", "Wood & Furniture", "Chemicals & Plastics", "Electronics & Electricals",
+        "Automotive & Parts", "Machinery & Equipment", "Building & Construction", "Civil Engineering",
+        "Real Estate Development", "Property Management", "Retail & Wholesale Trade", "E-commerce",
+        "Logistics & Transportation", "Tourism & Hospitality", "Healthcare Services", "Education & Training",
+        "Professional Services", "Creative & Media", "Information & Communication Technology (ICT)",
+        "Software & App Development", "Fintech", "Green Technology", "Renewable Energy", "Biotechnology",
+        "Social Enterprise", "Non-profit & Community Services", "Personal Services"
+    ]
+    
     # Construct the prompt for Bedrock
     prompt = f"""
     Analyze this grant document and extract structured information. Return ONLY a valid JSON object with this exact schema:
 
     {{
-        "title": "{title}",
+        "title": "extract the actual grant title from the document content",
         "issuer": "{issuer}",
         "country": "extracted country or null",
         "status": "open|closed|upcoming",
@@ -165,7 +181,9 @@ def extract_grant_info_with_bedrock(text: str, title: str, issuer: str) -> Dict[
     - For dates, convert to YYYY-MM-DD format
     - For status, determine based on deadline and document language
     - Be conservative - use null for uncertain information
-    - Sector tags should be broad categories (e.g., "technology", "healthcare", "education")
+    - For sector_tags, ONLY choose from this predefined list (can choose none or multiple): {sector_list}
+    - Match the grant content to the most relevant sectors from the list above
+    - For title, extract the actual grant/program name from the document (e.g., "Small Business Innovation Grant 2024", "Green Energy Initiative", etc.)
     - Eligibility rules should capture key requirements as key-value pairs
     - Required documents should list document types needed for application
 
@@ -264,7 +282,7 @@ def extract_grant_info_with_bedrock(text: str, title: str, issuer: str) -> Dict[
         
         # Fallback: return basic structure with provided information
         return {
-            "title": title,
+            "title": title or f"Grant Document - {datetime.utcnow().strftime('%B %d, %Y')}",
             "issuer": issuer,
             "country": None,
             "status": "open",
@@ -283,14 +301,14 @@ def validate_and_clean_grant_info(grant_info: Dict, title: str, issuer: str) -> 
     
     # Ensure required fields are present and valid
     validated_info = {
-        "title": grant_info.get("title", title),
+        "title": grant_info.get("title", title or f"Grant Document - {datetime.utcnow().strftime('%B %d, %Y')}"),
         "issuer": grant_info.get("issuer", issuer),
         "country": grant_info.get("country"),
         "status": grant_info.get("status", "open"),
         "deadline": validate_date(grant_info.get("deadline")),
         "amount_min": validate_number(grant_info.get("amount_min")),
         "amount_max": validate_number(grant_info.get("amount_max")),
-        "sector_tags": validate_list(grant_info.get("sector_tags", [])),
+        "sector_tags": validate_sector_tags(grant_info.get("sector_tags", [])),
         "eligibility_rules": validate_eligibility_rules(grant_info.get("eligibility_rules", [])),
         "required_documents": validate_list(grant_info.get("required_documents", []))
     }
@@ -366,6 +384,43 @@ def validate_list(value) -> List[str]:
     # Convert to strings and filter out empty values
     return [str(item).strip() for item in value if item is not None and str(item).strip()]
 
+def validate_sector_tags(value) -> List[str]:
+    """Validate sector tags against predefined list"""
+    # Define the predefined sector list
+    valid_sectors = [
+        "Agriculture", "Forestry", "Fisheries", "Mining & Quarrying", "Food & Beverage Manufacturing",
+        "Textiles & Apparel", "Wood & Furniture", "Chemicals & Plastics", "Electronics & Electricals",
+        "Automotive & Parts", "Machinery & Equipment", "Building & Construction", "Civil Engineering",
+        "Real Estate Development", "Property Management", "Retail & Wholesale Trade", "E-commerce",
+        "Logistics & Transportation", "Tourism & Hospitality", "Healthcare Services", "Education & Training",
+        "Professional Services", "Creative & Media", "Information & Communication Technology (ICT)",
+        "Software & App Development", "Fintech", "Green Technology", "Renewable Energy", "Biotechnology",
+        "Social Enterprise", "Non-profit & Community Services", "Personal Services"
+    ]
+    
+    if not isinstance(value, list):
+        logger.warning(f"sector_tags is not a list: {type(value)} - {value}")
+        return []
+    
+    # Filter to only include sectors from the predefined list
+    validated_sectors = []
+    invalid_sectors = []
+    
+    for item in value:
+        if item is not None:
+            sector = str(item).strip()
+            if sector in valid_sectors:
+                validated_sectors.append(sector)
+            else:
+                invalid_sectors.append(sector)
+    
+    # Log invalid sectors for debugging
+    if invalid_sectors:
+        logger.warning(f"Invalid sectors found (not in predefined list): {invalid_sectors}")
+        logger.info(f"Valid sectors that were accepted: {validated_sectors}")
+    
+    return validated_sectors
+
 def validate_eligibility_rules(rules) -> List[Dict[str, str]]:
     """Validate eligibility rules format"""
     if not isinstance(rules, list):
@@ -388,13 +443,21 @@ def save_grant_to_dynamodb(grant_id: str, grant_data: Dict[str, Any], s3_key: st
     try:
         table = dynamodb.Table(GRANTS_TABLE)
         
+        # Log the sector_tags before saving for debugging
+        logger.info(f"Sector tags before saving to DynamoDB: {grant_data['sector_tags']} (type: {type(grant_data['sector_tags'])})")
+        
+        # Ensure sector_tags is a proper list for DynamoDB
+        sector_tags = grant_data.get('sector_tags', [])
+        if not isinstance(sector_tags, list):
+            sector_tags = []
+        
         # Prepare the item for DynamoDB
         item = {
             'grant_id': grant_id,
             'title': grant_data['title'],
             'issuer': grant_data['issuer'],
             'status': grant_data['status'],
-            'sector_tags': grant_data['sector_tags'],
+            'sector_tags': sector_tags,  # Ensure this is a proper list
             'eligibility_rules': grant_data['eligibility_rules'],
             'required_documents': grant_data['required_documents'],
             'document_s3_key': s3_key,
@@ -411,6 +474,9 @@ def save_grant_to_dynamodb(grant_id: str, grant_data: Dict[str, Any], s3_key: st
                     item[field] = Decimal(str(grant_data[field]))
                 else:
                     item[field] = grant_data[field]
+        
+        # Log the final item structure before saving
+        logger.info(f"Final DynamoDB item structure: {json.dumps(item, default=str)}")
         
         # Save to DynamoDB
         table.put_item(Item=item)

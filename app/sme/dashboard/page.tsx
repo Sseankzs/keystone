@@ -50,76 +50,310 @@ const ReadinessBar = ({ percentage }: { percentage: number }) => {
   )
 }
 
-// Simplified grant data
-const GRANTS = [
-  {
-    id: "1",
-    title: "EIC Accelerator",
-    issuer: "European Commission",
-    amount: "€2.5M",
-    deadline: "Mar 15",
-    matchScore: 87,
-    readiness: 60,
-    tags: ["Deep Tech", "EU"],
-    description: "Breakthrough innovation support with grant funding up to €2.5M plus equity investment for high-risk, high-impact innovations.",
-    whyMatch: "AI/ML platform development aligns with deep tech innovation focus",
-    keyRequirement: "EU presence required",
-    timeToSubmit: "6-8 weeks",
-    successRate: "2.8%"
-  },
-  {
-    id: "2",
-    title: "Digital Europe Programme",
-    issuer: "European Commission",
-    amount: "€800K",
-    deadline: "Apr 30",
-    matchScore: 74,
-    readiness: 80,
-    tags: ["AI/ML", "Consortium"],
-    description: "Advanced digital technologies including AI, cybersecurity, and high-performance computing deployment across Europe.",
-    whyMatch: "Strong alignment with AI development and digital transformation",
-    keyRequirement: "3+ EU entity consortium",
-    timeToSubmit: "4-5 weeks",
-    successRate: "15.2%"
-  },
-  {
-    id: "3",
-    title: "Innovate UK Smart Grants",
-    issuer: "UK Research and Innovation",
-    amount: "£2M",
-    deadline: "Rolling",
-    matchScore: 68,
-    readiness: 40,
-    tags: ["R&D", "UK"],
-    description: "Game-changing and commercially viable R&D innovations with significant UK economic impact potential.",
-    whyMatch: "Innovation focus matches R&D platform development objectives",
-    keyRequirement: "UK-based company required",
-    timeToSubmit: "8-10 weeks",
-    successRate: "25.7%"
+// Types for API response
+interface GrantMatch {
+  grant_id: string
+  title: string
+  issuer: string
+  country: string | null
+  deadline: string | null
+  amount_min: number | null
+  amount_max: number | null
+  sector_tags: string[]
+  relevance_score: number
+  match_reasoning: string
+  key_benefits: string[]
+  potential_concerns: string[]
+  recommended_focus: string
+  deadline_urgency: string
+  competition_level: string
+  required_documents: string[]
+  eligibility_rules: Array<{ key: string; value: string }>
+}
+
+interface MatchmakingResponse {
+  statusCode: number
+  body: {
+    message: string
+    sme_goals: string
+    matches: GrantMatch[]
+    total_matches: number
+    processed_at: string
   }
-]
+}
 
 export default function FundingDashboard() {
   const [goalInput, setGoalInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [hasResults, setHasResults] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const [grants, setGrants] = useState<GrantMatch[]>([])
+  const [error, setError] = useState<string | null>(null)
+  const [totalMatches, setTotalMatches] = useState(0)
+  const [allGrants, setAllGrants] = useState<GrantMatch[]>([])
+  const [showAllGrants, setShowAllGrants] = useState(false)
+  const [loadingAllGrants, setLoadingAllGrants] = useState(false)
 
   const handleSearch = async () => {
     if (!goalInput.trim()) return
-    setSearchQuery(goalInput) // Store the search query when user clicks send
+    setSearchQuery(goalInput)
     setIsLoading(true)
+    setError(null)
     
-    setTimeout(() => {
+    try {
+      const requestBody = {
+        goals: goalInput.trim(),
+        sme_id: "sme-12345", // You might want to get this from user context
+        max_matches: 10
+      }
+      
+      console.log('Sending request to API:', requestBody)
+      
+      const response = await fetch('https://ys2o24njhf.execute-api.ap-southeast-1.amazonaws.com/dev/matchmaking', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      })
+
+      console.log('Response status:', response.status)
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()))
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('API Error Response:', errorText)
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`)
+      }
+
+      const data = await response.json()
+      console.log('API Response:', data) // Debug log
+      
+      // Handle different response structures
+      if (data.statusCode === 200 && data.body && data.body.matches) {
+        // Standard API Gateway response format
+        setGrants(data.body.matches)
+        setTotalMatches(data.body.total_matches || data.body.matches.length)
+        setHasResults(true)
+      } else if (data.matches) {
+        // Direct response without statusCode wrapper
+        setGrants(data.matches)
+        setTotalMatches(data.total_matches || data.matches.length)
+        setHasResults(true)
+      } else if (data.body && data.body.matches) {
+        // Response with body but no statusCode
+        setGrants(data.body.matches)
+        setTotalMatches(data.body.total_matches || data.body.matches.length)
+        setHasResults(true)
+      } else {
+        // Handle "No matches found" or "No grants currently available" as valid responses
+        const message = data.body?.message || data.message || 'No matches found'
+        console.log('No matches found. Full response:', data)
+        
+        if (message === 'No grants currently available' || 
+            message === 'No matches found' ||
+            message === 'Successfully found grant matches') {
+          // API returned success but no matches - show empty state instead of error
+          setGrants([])
+          setTotalMatches(0)
+          setHasResults(true)
+          setError(null) // Clear any previous errors
+        } else {
+          throw new Error(message)
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching matches:', err)
+      console.error('Error details:', {
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined
+      })
+      
+      let errorMessage = 'Failed to fetch matches'
+      if (err instanceof Error) {
+        errorMessage = err.message
+      } else if (typeof err === 'string') {
+        errorMessage = err
+      }
+      
+      setError(errorMessage)
+      setHasResults(false)
+    } finally {
       setIsLoading(false)
-      setHasResults(true)
-    }, 2500)
+    }
   }
 
   const handleReset = () => {
     setGoalInput("")
     setHasResults(false)
     setSearchQuery("")
+    setGrants([])
+    setError(null)
+    setTotalMatches(0)
+    setShowAllGrants(false)
+  }
+
+  const fetchAllGrants = async () => {
+    setLoadingAllGrants(true)
+    setError(null)
+    
+    try {
+      // Use the dedicated sme-fetch-grants endpoint to get all available grants
+      const response = await fetch('https://53k3dtbhjf.execute-api.ap-southeast-1.amazonaws.com/dev/sme-fetch-grants?limit=100', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log('All grants response:', data)
+      console.log('Response status:', response.status)
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()))
+      
+      // Handle the sme-fetch-grants response format
+      if (data.statusCode === 200 && data.body && data.body.grants) {
+        // Standard API Gateway response format with grants array
+        const formattedGrants = data.body.grants.map((grant: any) => ({
+          grant_id: grant.grant_id,
+          title: grant.title,
+          issuer: grant.issuer,
+          country: grant.country,
+          deadline: grant.deadline,
+          amount_min: grant.amount_min,
+          amount_max: grant.amount_max,
+          sector_tags: grant.sector_tags || [],
+          relevance_score: 0.3, // Default score for all grants view
+          match_reasoning: "Available grant opportunity",
+          key_benefits: ["Funding opportunity", "Business growth support"],
+          potential_concerns: ["Check eligibility requirements"],
+          recommended_focus: "Review grant details and requirements",
+          deadline_urgency: "medium",
+          competition_level: "medium",
+          required_documents: grant.required_documents || [],
+          eligibility_rules: grant.eligibility_rules || []
+        }))
+        
+        setAllGrants(formattedGrants)
+        setShowAllGrants(true)
+        setHasResults(true)
+      } else if (data.grants) {
+        // Handle direct response format with grants array
+        const formattedGrants = data.grants.map((grant: any) => ({
+          grant_id: grant.grant_id,
+          title: grant.title,
+          issuer: grant.issuer,
+          country: grant.country,
+          deadline: grant.deadline,
+          amount_min: grant.amount_min,
+          amount_max: grant.amount_max,
+          sector_tags: grant.sector_tags || [],
+          relevance_score: 0.3,
+          match_reasoning: "Available grant opportunity",
+          key_benefits: ["Funding opportunity", "Business growth support"],
+          potential_concerns: ["Check eligibility requirements"],
+          recommended_focus: "Review grant details and requirements",
+          deadline_urgency: "medium",
+          competition_level: "medium",
+          required_documents: grant.required_documents || [],
+          eligibility_rules: grant.eligibility_rules || []
+        }))
+        
+        setAllGrants(formattedGrants)
+        setShowAllGrants(true)
+        setHasResults(true)
+      } else {
+        console.error('Unexpected response structure:', data)
+        console.error('Expected: data.statusCode === 200 && data.body.grants or data.grants')
+        console.error('Actual: statusCode =', data.statusCode, ', body =', data.body ? 'exists' : 'missing', ', grants =', data.body?.grants ? 'exists' : 'missing')
+        throw new Error(data.body?.message || data.message || `Unexpected response: ${JSON.stringify(data)}`)
+      }
+    } catch (err) {
+      console.error('Error fetching all grants:', err)
+      setError(err instanceof Error ? err.message : 'Failed to fetch grants')
+    } finally {
+      setLoadingAllGrants(false)
+    }
+  }
+
+  // Helper function to format amount range
+  const formatAmount = (min: number | null, max: number | null) => {
+    if (min && max) {
+      return `$${(min / 1000).toFixed(0)}K - $${(max / 1000).toFixed(0)}K`
+    } else if (min) {
+      return `$${(min / 1000).toFixed(0)}K+`
+    } else if (max) {
+      return `Up to $${(max / 1000).toFixed(0)}K`
+    }
+    return "Amount TBD"
+  }
+
+  // Helper function to format deadline
+  const formatDeadline = (deadline: string | null) => {
+    if (!deadline) return "Open"
+    const date = new Date(deadline)
+    const now = new Date()
+    const diffTime = date.getTime() - now.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    
+    if (diffDays < 0) return "Closed"
+    if (diffDays === 0) return "Today"
+    if (diffDays === 1) return "Tomorrow"
+    if (diffDays <= 7) return `${diffDays}d left`
+    if (diffDays <= 30) return `${Math.ceil(diffDays / 7)}w left`
+    
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+
+  // Helper function to get deadline color
+  const getDeadlineColor = (deadline: string | null) => {
+    if (!deadline) return "text-blue-600"
+    const date = new Date(deadline)
+    const now = new Date()
+    const diffTime = date.getTime() - now.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    
+    if (diffDays < 0) return "text-gray-500"
+    if (diffDays <= 3) return "text-red-600"
+    if (diffDays <= 7) return "text-orange-600"
+    if (diffDays <= 30) return "text-amber-600"
+    return "text-green-600"
+  }
+
+  // Helper function to format competition level
+  const formatCompetition = (level: string) => {
+    switch (level.toLowerCase()) {
+      case 'low': return 'Low'
+      case 'medium': return 'Moderate'
+      case 'high': return 'High'
+      default: return 'Moderate'
+    }
+  }
+
+  // Helper function to get competition color
+  const getCompetitionColor = (level: string) => {
+    switch (level.toLowerCase()) {
+      case 'low': return 'text-green-600'
+      case 'medium': return 'text-amber-600'
+      case 'high': return 'text-red-600'
+      default: return 'text-amber-600'
+    }
+  }
+
+  // Helper function to calculate readiness based on urgency and competition
+  const calculateReadiness = (urgency: string, competition: string) => {
+    let baseScore = 50
+    if (urgency === 'low') baseScore += 20
+    else if (urgency === 'medium') baseScore += 10
+    
+    if (competition === 'low') baseScore += 20
+    else if (competition === 'medium') baseScore += 10
+    
+    return Math.min(baseScore, 95)
   }
 
   // Auto-scroll when results appear
@@ -283,23 +517,67 @@ export default function FundingDashboard() {
         )}
 
 
+        {/* Error State */}
+        {error && !isLoading && (
+          <div id="error-section" className="space-y-8 mt-8 snap-start min-h-screen flex flex-col">
+            <div className="text-center py-12">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Target className="h-6 w-6 text-red-600" />
+              </div>
+              <h2 className="text-lg font-medium text-gray-900 mb-2">
+                Unable to find matches
+              </h2>
+              <p className="text-sm text-gray-600 mb-4">
+                {error}
+              </p>
+              <Button onClick={handleReset} variant="outline">
+                Try again
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Results */}
-        {hasResults && !isLoading && (
+        {hasResults && !isLoading && !error && (
           <div id="results-section" className="space-y-8 mt-8 snap-start min-h-screen flex flex-col">
             {/* Results Header */}
             <div className="border-b border-gray-200 pb-4">
-              <h2 className="text-lg font-medium text-gray-900 mb-1">
-                {GRANTS.length} matches found
-              </h2>
-              <p className="text-sm text-gray-600">
-                Based on: "{searchQuery.substring(0, 120)}..."
-              </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-medium text-gray-900 mb-1">
+                    {showAllGrants ? `${allGrants.length} available grants` : `${totalMatches} matches found`}
+                  </h2>
+                  <p className="text-sm text-gray-600">
+                    {showAllGrants 
+                      ? "All available funding opportunities" 
+                      : `Based on: "${searchQuery.substring(0, 120)}..."`
+                    }
+                  </p>
+                </div>
+                {!showAllGrants && (
+                  <Button 
+                    onClick={fetchAllGrants} 
+                    variant="outline" 
+                    disabled={loadingAllGrants}
+                    className="ml-4"
+                  >
+                    {loadingAllGrants ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      "View All Grants"
+                    )}
+                  </Button>
+                )}
+              </div>
             </div>
 
             {/* Grant List - Compact iOS Style */}
             <div className="space-y-2">
-              {GRANTS.map((grant) => (
-                <div key={grant.id} className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 overflow-hidden">
+              {(showAllGrants ? allGrants : grants).map((grant) => (
+                <div key={grant.grant_id} className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 overflow-hidden">
                   {/* Header with Match Score */}
                   <div className="p-4 pb-3">
                     <div className="flex items-start justify-between mb-2">
@@ -308,19 +586,30 @@ export default function FundingDashboard() {
                           {grant.title}
                         </h3>
                         <p className="text-xs text-gray-500 mb-2">
-                          {grant.issuer}
+                          {grant.issuer} {grant.country && `• ${grant.country}`}
                         </p>
                         <div className="flex gap-1 flex-wrap">
-                          {grant.tags.map((tag) => (
+                          {grant.sector_tags.map((tag) => (
                             <span key={tag} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
                               {tag}
                             </span>
                           ))}
                         </div>
                       </div>
-                      <div className="ml-3 flex-shrink-0">
-                        <MatchScore score={grant.matchScore} />
-                      </div>
+                        <div className="ml-3 flex-shrink-0">
+                          {showAllGrants ? (
+                            <div className="text-right">
+                              <div className="text-sm font-mono text-blue-600">
+                                Available
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                Grant
+                              </div>
+                            </div>
+                          ) : (
+                            <MatchScore score={Math.round(grant.relevance_score * 100)} />
+                          )}
+                        </div>
                     </div>
                   </div>
 
@@ -329,7 +618,7 @@ export default function FundingDashboard() {
                     <div className="grid grid-cols-3 gap-3">
                       <div className="text-center">
                         <div className="text-lg font-bold text-gray-900 mb-0.5">
-                          {grant.amount}
+                          {formatAmount(grant.amount_min, grant.amount_max)}
                         </div>
                         <div className="text-xs text-gray-500 uppercase tracking-wide">
                           Amount
@@ -337,8 +626,8 @@ export default function FundingDashboard() {
                       </div>
                       
                       <div className="text-center">
-                        <div className="text-lg font-bold text-gray-900 mb-0.5">
-                          {grant.deadline}
+                        <div className={`text-lg font-bold mb-0.5 ${getDeadlineColor(grant.deadline)}`}>
+                          {formatDeadline(grant.deadline)}
                         </div>
                         <div className="text-xs text-gray-500 uppercase tracking-wide">
                           Deadline
@@ -346,38 +635,43 @@ export default function FundingDashboard() {
                       </div>
                       
                       <div className="text-center">
-                        <div className="text-lg font-bold text-gray-900 mb-0.5">
-                          {grant.successRate}
+                        <div className={`text-lg font-bold mb-0.5 ${getCompetitionColor(grant.competition_level)}`}>
+                          {formatCompetition(grant.competition_level)}
                         </div>
                         <div className="text-xs text-gray-500 uppercase tracking-wide">
-                          Success Rate
+                          Competition
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Description - Compact */}
+                  {/* Match Reasoning - Compact */}
                   <div className="px-4 pb-3">
                     <p className="text-xs text-gray-600 leading-relaxed line-clamp-2">
-                      {grant.description}
+                      {showAllGrants 
+                        ? `Funding opportunity from ${grant.issuer}. ${grant.sector_tags.length > 0 ? `Sectors: ${grant.sector_tags.join(', ')}.` : ''}`
+                        : grant.match_reasoning
+                      }
                     </p>
                   </div>
 
-                  {/* Match Reasons - Compact */}
+                  {/* Key Benefits - Compact */}
                   <div className="px-4 pb-3">
                     <div className="bg-gray-50 rounded-lg p-2 space-y-1.5">
                       <div className="flex items-start gap-1.5">
-                        <div className="w-1 h-1 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                        <div className="w-1 h-1 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></div>
                         <div className="text-xs text-gray-700">
-                          <span className="font-medium">Match:</span> {grant.whyMatch}
+                          <span className="font-medium">Benefits:</span> {grant.key_benefits.slice(0, 2).join(', ')}
                         </div>
                       </div>
-                      <div className="flex items-start gap-1.5">
-                        <div className="w-1 h-1 bg-orange-500 rounded-full mt-1.5 flex-shrink-0"></div>
-                        <div className="text-xs text-gray-700">
-                          <span className="font-medium">Requirement:</span> {grant.keyRequirement}
+                      {grant.potential_concerns.length > 0 && (
+                        <div className="flex items-start gap-1.5">
+                          <div className="w-1 h-1 bg-orange-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                          <div className="text-xs text-gray-700">
+                            <span className="font-medium">Consider:</span> {grant.potential_concerns[0]}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
 
@@ -385,12 +679,12 @@ export default function FundingDashboard() {
                   <div className="px-4 pb-3">
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="text-xs font-medium text-gray-700">Readiness</span>
-                      <span className="text-xs text-gray-500">{grant.readiness}%</span>
+                      <span className="text-xs text-gray-500">{calculateReadiness(grant.deadline_urgency, grant.competition_level)}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-1.5">
                       <div 
                         className="bg-gradient-to-r from-blue-500 to-blue-600 h-1.5 rounded-full transition-all duration-300"
-                        style={{ width: `${grant.readiness}%` }}
+                        style={{ width: `${calculateReadiness(grant.deadline_urgency, grant.competition_level)}%` }}
                       ></div>
                     </div>
                   </div>
@@ -414,16 +708,48 @@ export default function FundingDashboard() {
 
             {/* Footer */}
             <div className="text-center pt-8">
-              <Button variant="outline" className="border-gray-300 text-gray-700">
-                View all opportunities
-              </Button>
+              {showAllGrants ? (
+                <Button 
+                  onClick={() => setShowAllGrants(false)} 
+                  variant="outline" 
+                  className="border-gray-300 text-gray-700"
+                >
+                  Back to Matches
+                </Button>
+              ) : (
+                <Button 
+                  onClick={fetchAllGrants} 
+                  variant="outline" 
+                  className="border-gray-300 text-gray-700"
+                  disabled={loadingAllGrants}
+                >
+                  {loadingAllGrants ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    "View all opportunities"
+                  )}
+                </Button>
+              )}
             </div>
           </div>
         )}
 
-        {/* Empty State - Hidden since content is now in header */}
-        {!hasResults && !isLoading && (
-          <div className="mt-8"></div>
+        {/* Empty State - Show when no results and no error */}
+        {!hasResults && !isLoading && !error && (
+          <div className="mt-8 text-center py-12">
+            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Target className="h-6 w-6 text-gray-400" />
+            </div>
+            <h2 className="text-lg font-medium text-gray-900 mb-2">
+              Ready to find funding?
+            </h2>
+            <p className="text-sm text-gray-600">
+              Describe your funding goals above to get started.
+            </p>
+          </div>
         )}
       </div>
     </div>

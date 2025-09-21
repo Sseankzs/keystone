@@ -131,7 +131,6 @@ export default function GrantUploadPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          title: formData.grantTitle || fileToProcess.name.replace(/\.[^/.]+$/, ""), // Use form title or filename
           issuer: "hardcoded-issuer", // Hardcoded as requested
           pdf_content: base64Content
         })
