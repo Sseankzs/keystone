@@ -9,7 +9,7 @@ import { Suspense } from "react"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "FundConnect - Connect Startups with Funders",
+  title: "Keystone - Connect Startups with Funders",
   description: "AI-powered platform matching innovative startups with suitable funders",
   generator: "v0.app",
 }

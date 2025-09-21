@@ -223,8 +223,7 @@ export default function GrantDetails() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <Target className="h-5 w-5 text-gray-600" />
-              <span className="font-medium text-gray-900">Grant Navigator</span>
+              <span className="font-medium text-gray-900 font-serif">Keystone</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-500 min-w-0 flex-1">
               <Building2 className="h-4 w-4 flex-shrink-0" />

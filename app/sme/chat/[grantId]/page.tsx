@@ -53,7 +53,7 @@ export default function ChatPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Building2 className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-bold text-foreground">FundConnect</span>
+              <span className="text-2xl font-bold text-foreground font-serif">Keystone</span>
             </div>
             <Link href="/sme/results">
               <Button variant="outline" size="sm">

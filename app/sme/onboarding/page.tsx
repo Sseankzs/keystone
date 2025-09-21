@@ -308,7 +308,7 @@ export default function SMEOnboardingPage() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-2 mb-4">
             <Building2 className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold">FundConnect</span>
+            <span className="text-2xl font-bold font-serif">Keystone</span>
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2">Complete Your Profile</h1>
           <p className="text-muted-foreground">Help us understand your company to find the best funding matches</p>

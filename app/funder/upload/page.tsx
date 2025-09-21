@@ -132,7 +132,7 @@ export default function GrantUploadPage() {
           <div className="mb-8">
             <div className="flex items-center space-x-2 mb-4">
               <Building2 className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-bold">FundConnect</span>
+              <span className="text-2xl font-bold font-serif">Keystone</span>
             </div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Grant Processing Complete</h1>
             <p className="text-muted-foreground">
@@ -242,7 +242,7 @@ export default function GrantUploadPage() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-2 mb-4">
             <Building2 className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold">FundConnect</span>
+            <span className="text-2xl font-bold font-serif">Keystone</span>
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2">Upload Grant Information</h1>
           <p className="text-muted-foreground">

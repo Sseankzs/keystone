@@ -11,11 +11,8 @@ export default function RoleSelectorPage() {
       <div className="w-full max-w-4xl">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="flex items-center justify-center space-x-3 mb-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary">
-              <Building2 className="h-8 w-8 text-primary-foreground" />
-            </div>
-            <span className="text-4xl font-bold">FundConnect</span>
+          <div className="mb-6">
+            <span className="text-4xl font-bold font-serif">Keystone</span>
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-4">Choose Your Role</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">

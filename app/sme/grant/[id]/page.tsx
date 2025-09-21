@@ -88,20 +88,20 @@ const flatMove: SpringConfig = {
 const MOCK_GRANTS = [
   {
     id: "1",
-    title: "European Innovation Council Accelerator",
-    amount: "$2.5M",
+    title: "Malaysia Digital Economy Corporation (MDEC) Digital Innovation Fund",
+    amount: "RM 2.5M",
     date: "Mar 15",
     assignee: "Innovation Team",
     status: "active",
     progress: 85,
-    logo: "🇪🇺",
+    logo: "🇲🇾",
     count: 1,
     isSelected: true,
   },
   {
     id: "2", 
-    title: "SBIR Phase II Grant",
-    amount: "$750k",
+    title: "Malaysian Technology Development Corporation (MTDC) Technology Commercialisation Fund",
+    amount: "RM 750k",
     date: "Apr 20",
     assignee: "Research Division",
     status: "active",
@@ -111,8 +111,8 @@ const MOCK_GRANTS = [
   },
   {
     id: "3",
-    title: "Green Tech Innovation Fund",
-    amount: "$1.2M",
+    title: "Malaysian Green Technology Corporation (MGTC) Green Technology Fund",
+    amount: "RM 1.2M",
     date: "May 10",
     assignee: "Sustainability Team",
     status: "pending",
@@ -126,59 +126,171 @@ const MOCK_GRANTS = [
 const GRANT_DATA = {
   "1": {
     id: "1",
-    title: "European Innovation Council Accelerator",
-    issuer: "European Commission",
-    maxAmount: "$2,500,000",
+    title: "Malaysia Digital Economy Corporation (MDEC) Digital Innovation Fund",
+    issuer: "Malaysia Digital Economy Corporation",
+    maxAmount: "RM 2,500,000",
     deadline: "2025-03-15",
     badge: "Likely",
     score: 85,
-    whyItMatches: "Strong tech innovation focus aligns with your AI/ML development goals",
-    dealbreakers: "Requires EU presence",
+    whyItMatches: "Strong digital innovation focus aligns with your AI/ML development goals in Malaysia",
+    dealbreakers: "Requires Malaysian-registered SME or startup",
     progress: { current: 2, total: 5 },
-    tags: ["Innovation", "Technology", "EU"],
+    tags: ["Digital Technology", "Innovation", "SMEs", "Startups", "AI/ML", "Fintech"],
     status: "Open",
-    description: "The EIC Accelerator supports SMEs with breakthrough innovations and high growth potential. This program provides both grant funding and equity investment to help companies scale their innovative solutions.",
-    playbook: "Innovation Grant Strategy",
+    description: "The MDEC Digital Innovation Fund supports Malaysian SMEs and startups with breakthrough digital innovations and high growth potential. This program provides grant funding to help companies scale their digital solutions and contribute to Malaysia's digital economy transformation.",
+    playbook: "Digital Innovation Grant Strategy",
     eligibility: [
-      "EU-based SMEs or startups",
+      "Malaysian-registered SMEs or startups",
       "Technology Readiness Level 5-8",
-      "Strong innovation component",
-      "Clear market potential",
-      "Scalable business model"
+      "Strong digital innovation component",
+      "Clear market potential in Malaysia",
+      "Scalable digital business model"
     ],
     benefits: [
-      "Up to €2.5M in grant funding",
-      "Up to €15M in equity investment",
+      "Up to RM 2.5M in grant funding",
+      "Access to MDEC ecosystem and market access programs",
       "Business coaching and mentoring",
-      "Access to EIC network and partners"
+      "Networking opportunities with industry players"
     ],
     criteria: [
-      "Success criteria: Demonstrate TRL 5-8 with working prototype and validation results",
-      "Champion: EU Innovation Council review panel scheduled for next quarter",
-      "Risks: EU presence requirement may need partnership or subsidiary establishment",
+      "Success criteria: Demonstrate TRL 5-8 with working prototype and validation results for the Malaysian market",
+      "Champion: MDEC evaluation panel scheduled for next quarter",
+      "Risks: Competition in the digital innovation space in Malaysia",
     ],
     nextSteps: [
       {
         id: 1,
-        text: "Complete Technology Readiness Assessment and gather evidence of current development stage",
+        text: "Complete Technology Readiness Assessment and gather evidence of current development stage for digital solution",
         completed: true,
         note: "TRL assessment completed at level 6...",
       },
       {
         id: 2,
-        text: "Prepare detailed market analysis showing innovation potential and market need",
+        text: "Prepare detailed market analysis showing digital innovation potential and market need in Malaysia",
         completed: false,
       },
       {
         id: 3,
-        text: "Create 3-year financial projections including funding use plan",
+        text: "Create 3-year financial projections including funding use plan for Malaysian operations",
         completed: false,
         dueDate: "Due in 2 weeks",
       },
     ],
     suggestedSteps: [
-      "Research EU subsidiary requirements and costs for establishing presence",
-      "Connect with EIC mentors through the accelerator network for guidance",
+      "Research MDEC digital economy initiatives and align your solution with national priorities",
+      "Connect with MDEC mentors through their network for guidance on application strategies",
+    ]
+  },
+  "2": {
+    id: "2",
+    title: "Malaysian Technology Development Corporation (MTDC) Technology Commercialisation Fund",
+    issuer: "Malaysian Technology Development Corporation",
+    maxAmount: "RM 750,000",
+    deadline: "2025-04-20",
+    badge: "Active",
+    score: 60,
+    whyItMatches: "Your technology has strong commercialisation potential in key Malaysian industries.",
+    dealbreakers: "Requires proven technology with commercial potential",
+    progress: { current: 3, total: 6 },
+    tags: ["Technology Commercialisation", "R&D", "Manufacturing", "Engineering", "Biotech"],
+    status: "Open",
+    description: "The MTDC Technology Commercialisation Fund supports Malaysian companies in commercializing their research and development outcomes. This program provides funding to bridge the gap between R&D and market deployment, helping companies bring innovative technologies to market.",
+    playbook: "Technology Commercialisation Strategy",
+    eligibility: [
+      "Malaysian-registered technology companies",
+      "Proven technology with commercial potential",
+      "Novel technology or significant improvement",
+      "Clear commercial market opportunity",
+      "Viable commercialization strategy"
+    ],
+    benefits: [
+      "Up to RM 750k in commercialisation funding",
+      "Access to MTDC expertise and network",
+      "Support for market entry and scale-up",
+      "Mentorship from industry experts"
+    ],
+    criteria: [
+      "Success criteria: Demonstrate clear path to market and revenue generation within 2-3 years",
+      "Champion: MTDC evaluation committee scheduled for next month",
+      "Risks: Market acceptance for novel technology and competitive landscape",
+    ],
+    nextSteps: [
+      {
+        id: 1,
+        text: "Develop a comprehensive commercialisation plan, including market entry strategy and sales projections",
+        completed: false,
+      },
+      {
+        id: 2,
+        text: "Prepare intellectual property (IP) strategy and secure necessary protections",
+        completed: false,
+      },
+      {
+        id: 3,
+        text: "Conduct pilot testing or validation with potential customers in target industries",
+        completed: false,
+        dueDate: "Due in 3 weeks",
+      },
+    ],
+    suggestedSteps: [
+      "Engage with MTDC business advisors to refine your commercialisation strategy",
+      "Explore potential industry partnerships for technology adoption and distribution",
+    ]
+  },
+  "3": {
+    id: "3",
+    title: "Malaysian Green Technology Corporation (MGTC) Green Technology Fund",
+    issuer: "Malaysian Green Technology Corporation",
+    maxAmount: "RM 1,200,000",
+    deadline: "2025-05-10",
+    badge: "Pending",
+    score: 25,
+    whyItMatches: "Your green technology solution contributes to Malaysia's sustainability goals.",
+    dealbreakers: "Requires environmentally friendly technology with clear environmental benefits",
+    progress: { current: 1, total: 4 },
+    tags: ["Green Technology", "Sustainability", "Renewable Energy", "Environmental", "Clean Tech"],
+    status: "Upcoming",
+    description: "The MGTC Green Technology Fund supports Malaysian companies developing environmentally friendly technologies and solutions. This program provides funding to accelerate the adoption of green technologies and contribute to Malaysia's sustainability goals and carbon reduction targets.",
+    playbook: "Green Technology Funding Strategy",
+    eligibility: [
+      "Malaysian-registered green technology companies",
+      "Environmentally friendly technology",
+      "Green innovation with environmental benefits",
+      "Clear environmental impact potential",
+      "Sustainable business model"
+    ],
+    benefits: [
+      "Up to RM 1.2M in green technology funding",
+      "Access to MGTC initiatives and policy support",
+      "Opportunities for collaboration with other green technology players",
+      "Showcase your solution at national green events"
+    ],
+    criteria: [
+      "Success criteria: Quantifiable environmental impact (e.g., carbon reduction, waste reduction)",
+      "Champion: MGTC technical committee review in two months",
+      "Risks: Regulatory changes in green technology and public acceptance of new solutions",
+    ],
+    nextSteps: [
+      {
+        id: 1,
+        text: "Conduct a detailed environmental impact assessment of your technology and quantify its benefits",
+        completed: false,
+      },
+      {
+        id: 2,
+        text: "Prepare a sustainability report outlining your company's commitment and practices",
+        completed: false,
+      },
+      {
+        id: 3,
+        text: "Develop a community engagement plan to promote the adoption of your green solution",
+        completed: false,
+        dueDate: "Due in 4 weeks",
+      },
+    ],
+    suggestedSteps: [
+      "Liaise with MGTC experts to understand the latest green technology policies and incentives",
+      "Participate in green technology exhibitions and forums to network and showcase your solution",
     ]
   }
 }
@@ -189,33 +301,97 @@ const getEligibilityRules = (grantId: string) => {
     "1": [
       {
         id: "1",
-        rule: "EU-based SMEs or startups",
+        rule: "Malaysian-registered SMEs or startups",
         status: "uncertain" as const,
-        reason: "Company location needs verification"
+        reason: "Company registration needs verification"
       },
       {
         id: "2",
         rule: "Technology Readiness Level 5-8",
         status: "uncertain" as const,
-        reason: "TRL assessment required"
+        reason: "TRL assessment required for digital solution"
       },
       {
         id: "3",
-        rule: "Strong innovation component",
+        rule: "Strong digital innovation component",
         status: "pass" as const,
         reason: "AI/ML innovation matches requirement"
       },
       {
         id: "4",
-        rule: "Clear market potential",
+        rule: "Clear market potential in Malaysia",
         status: "uncertain" as const,
-        reason: "Market analysis needed"
+        reason: "Market analysis needed for Malaysian market"
       },
       {
         id: "5",
-        rule: "Scalable business model",
+        rule: "Scalable digital business model",
         status: "pass" as const,
-        reason: "Software business model is scalable"
+        reason: "Digital business model is scalable"
+      },
+    ],
+    "2": [
+      {
+        id: "1",
+        rule: "Malaysian-registered technology companies",
+        status: "uncertain" as const,
+        reason: "Company registration needs verification"
+      },
+      {
+        id: "2",
+        rule: "Proven technology with commercial potential",
+        status: "uncertain" as const,
+        reason: "Technology validation and market fit assessment required"
+      },
+      {
+        id: "3",
+        rule: "Novel technology or significant improvement",
+        status: "pass" as const,
+        reason: "Innovative technology identified"
+      },
+      {
+        id: "4",
+        rule: "Clear commercial market opportunity",
+        status: "uncertain" as const,
+        reason: "Detailed market opportunity analysis needed"
+      },
+      {
+        id: "5",
+        rule: "Viable commercialization strategy",
+        status: "pass" as const,
+        reason: "Initial commercialization strategy drafted"
+      },
+    ],
+    "3": [
+      {
+        id: "1",
+        rule: "Malaysian-registered green technology companies",
+        status: "uncertain" as const,
+        reason: "Company registration needs verification"
+      },
+      {
+        id: "2",
+        rule: "Environmentally friendly technology",
+        status: "uncertain" as const,
+        reason: "Environmental impact assessment required"
+      },
+      {
+        id: "3",
+        rule: "Green innovation with environmental benefits",
+        status: "pass" as const,
+        reason: "Identified green innovation with potential benefits"
+      },
+      {
+        id: "4",
+        rule: "Clear environmental impact potential",
+        status: "uncertain" as const,
+        reason: "Quantifiable environmental impact analysis needed"
+      },
+      {
+        id: "5",
+        rule: "Sustainable business model",
+        status: "pass" as const,
+        reason: "Sustainable business model outlined"
       },
     ]
   }
@@ -228,40 +404,124 @@ const getChecklistItems = (grantId: string) => {
     "1": [
       {
         id: "1",
-        title: "Technology Readiness Assessment",
-        description: "Complete TRL assessment form and provide evidence of current development stage",
+        title: "Digital Solution Readiness Assessment",
+        description: "Complete TRL assessment for your digital solution and provide evidence of current development stage in Malaysia.",
         completed: false,
         category: "documents" as const,
         required: true
       },
       {
         id: "2",
-        title: "Market Analysis & Impact",
-        description: "Prepare detailed market analysis showing innovation potential and market need",
+        title: "Malaysian Market Analysis & Digital Impact",
+        description: "Prepare detailed market analysis showing digital innovation potential and market need in Malaysia.",
         completed: false,
         category: "business" as const,
         required: true
       },
       {
         id: "3",
-        title: "Financial Projections",
-        description: "Create 3-year financial projections including funding use plan",
+        title: "Financial Projections for Malaysian Operations",
+        description: "Create 3-year financial projections including funding use plan for your Malaysian operations.",
         completed: false,
         category: "financial" as const,
         required: true
       },
       {
         id: "4",
-        title: "Innovation Description",
-        description: "Write detailed technical description of your innovation and competitive advantages",
+        title: "Digital Innovation Description & Competitive Advantages",
+        description: "Write detailed technical description of your digital innovation and competitive advantages in the Malaysian market.",
         completed: false,
         category: "documents" as const,
         required: true
       },
       {
         id: "5",
-        title: "Team & Company Profile",
-        description: "Prepare team CVs and company background documentation",
+        title: "Team & Company Profile (Malaysia)",
+        description: "Prepare team CVs and company background documentation relevant to your Malaysian entity.",
+        completed: false,
+        category: "business" as const,
+        required: true
+      },
+    ],
+    "2": [
+      {
+        id: "1",
+        title: "Technology Commercialisation Plan (Malaysia)",
+        description: "Develop a comprehensive technology commercialisation plan, including market entry strategy and sales projections for Malaysia.",
+        completed: false,
+        category: "business" as const,
+        required: true
+      },
+      {
+        id: "2",
+        title: "Intellectual Property (IP) Strategy & Protection",
+        description: "Prepare intellectual property (IP) strategy and secure necessary protections for your technology in Malaysia.",
+        completed: false,
+        category: "documents" as const,
+        required: true
+      },
+      {
+        id: "3",
+        title: "Pilot Testing & Customer Validation (Malaysia)",
+        description: "Conduct pilot testing or validation with potential customers in target industries in Malaysia.",
+        completed: false,
+        category: "business" as const,
+        required: true
+      },
+      {
+        id: "4",
+        title: "Technical Documentation & Specifications",
+        description: "Provide detailed technical documentation and specifications of your technology.",
+        completed: false,
+        category: "documents" as const,
+        required: true
+      },
+      {
+        id: "5",
+        title: "Team & Management Profile",
+        description: "Prepare team CVs and management background documentation for your technology commercialisation.",
+        completed: false,
+        category: "business" as const,
+        required: true
+      },
+    ],
+    "3": [
+      {
+        id: "1",
+        title: "Environmental Impact Assessment (EIA) for Green Technology",
+        description: "Conduct a detailed environmental impact assessment of your green technology and quantify its benefits.",
+        completed: false,
+        category: "documents" as const,
+        required: true
+      },
+      {
+        id: "2",
+        title: "Sustainability Report & Practices",
+        description: "Prepare a sustainability report outlining your company's commitment and green practices.",
+        completed: false,
+        category: "documents" as const,
+        required: true
+      },
+      {
+        id: "3",
+        title: "Community Engagement & Adoption Plan",
+        description: "Develop a community engagement plan to promote the adoption of your green solution in Malaysia.",
+        completed: false,
+        category: "business" as const,
+        required: true
+      },
+      {
+        id: "4",
+        title: "Green Technology Certification & Compliance",
+        description: "Obtain necessary green technology certifications and ensure compliance with Malaysian environmental regulations.",
+        completed: false,
+        category: "documents" as const,
+        required: true
+      },
+      {
+        id: "5",
+        title: "Team & Green Initiatives Profile",
+        description: "Prepare team CVs and highlight experience in green technology and sustainability initiatives.",
         completed: false,
         category: "business" as const,
         required: true
@@ -744,8 +1004,7 @@ export default function GrantDetailPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <Target className="h-5 w-5 text-gray-600" />
-              <span className="font-medium text-gray-900">Grant Navigator</span>
+              <span className="font-medium text-gray-900 font-serif">Keystone</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-500 min-w-0 flex-1">
               <Building2 className="h-4 w-4 flex-shrink-0" />
