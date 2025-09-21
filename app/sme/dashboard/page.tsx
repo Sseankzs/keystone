@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -103,9 +103,11 @@ export default function FundingDashboard() {
   const [goalInput, setGoalInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [hasResults, setHasResults] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
 
   const handleSearch = async () => {
     if (!goalInput.trim()) return
+    setSearchQuery(goalInput) // Store the search query when user clicks send
     setIsLoading(true)
     
     setTimeout(() => {
@@ -117,31 +119,56 @@ export default function FundingDashboard() {
   const handleReset = () => {
     setGoalInput("")
     setHasResults(false)
+    setSearchQuery("")
   }
 
+  // Auto-scroll when results appear
+  useEffect(() => {
+    if (hasResults && !isLoading) {
+      setTimeout(() => {
+        const resultsElement = document.getElementById('results-section')
+        if (resultsElement) {
+          resultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      }, 100)
+    }
+  }, [hasResults, isLoading])
+
+  // Add scroll snap behavior
+  useEffect(() => {
+    const container = document.querySelector('.snap-y') as HTMLElement
+    if (container) {
+      container.style.scrollBehavior = 'smooth'
+    }
+  }, [])
+
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-4xl mx-auto px-6 py-16">
+    <div className="min-h-screen bg-white flex items-center justify-center snap-y snap-mandatory overflow-y-auto">
+      <div className="max-w-4xl mx-auto px-6 w-full">
         
         {/* Header */}
-        <div className="mb-16">
-          <h1 className="text-2xl font-medium text-gray-900 mb-2">
-            Funding Intelligence
+        <div className={`mb-8 text-center snap-start ${hasResults ? 'pt-16' : ''}`}>
+          <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Target className="h-6 w-6 text-gray-600" />
+          </div>
+          <h1 className="text-2xl font-medium text-gray-900 mb-3">
+            {isLoading ? "Finding funding..." : "Ready to find funding?"}
           </h1>
-          <p className="text-gray-600">
-            Find funding opportunities that match your goals
+          <p className="text-gray-600 mb-6 max-w-md mx-auto">
+            {isLoading ? "Searching through opportunities..." : "Describe your funding goals and we'll show you relevant opportunities."}
           </p>
         </div>
 
         {/* Search Input - Carbon Copy of Reference */}
-        <div className="mb-12">
-          <div className="relative max-w-2xl mx-auto">
+        {!isLoading && (
+          <div className="mb-8">
+            <div className="relative max-w-2xl mx-auto">
             {/* Input Container - Dynamic Shape Based on Content */}
-            <div className={`relative bg-gray-100 border border-gray-300 focus-within:border-gray-400 transition-all duration-200 ${
+            <div className={`relative bg-gray-100 transition-all duration-200 ${
               goalInput.split('\n').length === 1 && goalInput.length < 50 ? 'rounded-full' : 'rounded-2xl'
             }`}>
               <Textarea
-                placeholder="Describe what you want to achieve..."
+                placeholder="What it takes to makes your dreams come through"
                 value={goalInput}
                 onChange={(e) => setGoalInput(e.target.value)}
                 rows={goalInput.split('\n').length > 1 ? Math.min(goalInput.split('\n').length, 4) : 1}
@@ -196,7 +223,7 @@ export default function FundingDashboard() {
                     {isLoading ? (
                       <Loader2 className="h-3 w-3 text-white animate-spin" />
                     ) : (
-                      <ArrowUp className="h-3 w-3 text-white" />
+                      <ArrowUp className="h-3 w-3 text-white" strokeWidth={2.5} />
                     )}
                   </button>
                 </div>
@@ -238,47 +265,34 @@ export default function FundingDashboard() {
                     {isLoading ? (
                       <Loader2 className="h-3 w-3 text-white animate-spin" />
                     ) : (
-                      <ArrowUp className="h-3 w-3 text-white" />
+                      <ArrowUp className="h-3 w-3 text-white" strokeWidth={2.5} />
                     )}
                   </button>
                 </div>
               )}
             </div>
             
-            {/* Helper Text */}
-            <div className="text-center mt-3">
-              <p className="text-sm text-gray-500">
-                Be specific about timeline, amount, and objectives
-              </p>
+              {/* Helper Text */}
+              <div className="text-center mt-3">
+                <p className="text-sm text-gray-500 italic">
+                  Tips: Be specific about timeline, amount, and objectives
+                </p>
+              </div>
             </div>
-          </div>
-        </div>
-
-        {/* Loading State */}
-        {isLoading && (
-          <div className="text-center py-16">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-gray-100 rounded-full mb-4">
-              <Target className="h-6 w-6 text-gray-600 animate-pulse" />
-            </div>
-            <h2 className="text-lg font-medium text-gray-900 mb-2">
-              Analyzing your goals
-            </h2>
-            <p className="text-gray-600">
-              Searching through funding opportunities...
-            </p>
           </div>
         )}
 
+
         {/* Results */}
         {hasResults && !isLoading && (
-          <div className="space-y-8">
+          <div id="results-section" className="space-y-8 mt-8 snap-start min-h-screen flex flex-col">
             {/* Results Header */}
             <div className="border-b border-gray-200 pb-4">
               <h2 className="text-lg font-medium text-gray-900 mb-1">
                 {GRANTS.length} matches found
               </h2>
               <p className="text-sm text-gray-600">
-                Based on: "{goalInput.substring(0, 120)}..."
+                Based on: "{searchQuery.substring(0, 120)}..."
               </p>
             </div>
 
@@ -407,22 +421,9 @@ export default function FundingDashboard() {
           </div>
         )}
 
-        {/* Empty State */}
+        {/* Empty State - Hidden since content is now in header */}
         {!hasResults && !isLoading && (
-          <div className="text-center py-16">
-            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Target className="h-6 w-6 text-gray-600" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Ready to find funding?
-            </h3>
-            <p className="text-gray-600 mb-8 max-w-md mx-auto">
-              Describe your funding goals and we'll show you relevant opportunities.
-            </p>
-            <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-600 max-w-md mx-auto">
-              <strong>Tip:</strong> Include specific amounts, timelines, and what you plan to achieve for better matches.
-            </div>
-          </div>
+          <div className="mt-8"></div>
         )}
       </div>
     </div>

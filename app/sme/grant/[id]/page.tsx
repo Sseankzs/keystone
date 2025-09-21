@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -11,11 +11,13 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
+import { animated, useSpring, SpringConfig } from '@react-spring/web'
 import {
   CheckCircle2,
   Send,
   ChevronDown,
   ChevronUp,
+  ArrowUp,
   Building2,
   Calendar,
   DollarSign,
@@ -36,10 +38,51 @@ import {
   Plus,
   X,
   ChevronRight,
-  Circle
+  Circle,
+  Paperclip,
+  File
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { CircularProgress } from "@/components/ui/circular-progress"
+
+// Island modes enum
+enum IslandMode {
+  DEFAULT = 'Default',
+  TODO_ONLY = 'TodoOnly',
+  FULL_EXPANDED = 'FullExpanded',
+}
+
+// Scene type definitions
+type SharedIslandScene<Name extends string> = {
+  name: Name
+}
+
+type TodoOnlyIslandScene<Name extends string> = SharedIslandScene<Name> & {
+  mode: IslandMode.TODO_ONLY
+  content: React.ReactNode
+}
+
+type FullExpandedIslandScene<Name extends string> = SharedIslandScene<Name> & {
+  mode: IslandMode.FULL_EXPANDED
+  left: React.ReactNode
+  right: React.ReactNode
+}
+
+type IslandScene<Name extends string = string> =
+  | TodoOnlyIslandScene<Name>
+  | FullExpandedIslandScene<Name>
+
+// Props type for Dynamic Island
+type DynamicIslandProps<Name extends string, T extends IslandScene<Name>> = {
+  scenes: T[]
+  currentSceneName: T['name'] | null
+}
+
+// Animation configurations
+const flatMove: SpringConfig = {
+  tension: 300,
+  mass: 0.1,
+}
 
 // Mock grants list for sidebar - in real app, this would come from API
 const MOCK_GRANTS = [
@@ -294,22 +337,98 @@ export default function GrantDetailPage() {
   const grant = GRANT_DATA[grantId as keyof typeof GRANT_DATA]
   const currentGrant = GRANT_DATA[grantId as keyof typeof GRANT_DATA]
 
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "1",
-      content: `Hi! I'm your EIC Accelerator application assistant. I see you're interested in applying for the European Innovation Council Accelerator program. This is a great fit for your AI/ML innovation! I've prepared a customized to-do list based on the EIC requirements. What would you like to know about first?`,
-      sender: "assistant",
-      timestamp: new Date(),
-    },
-  ])
+  const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputMessage, setInputMessage] = useState("")
   const [isTyping, setIsTyping] = useState(false)
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
+  const [isUploading, setIsUploading] = useState(false)
   const [isTodoCollapsed, setIsTodoCollapsed] = useState(false)
+
+  // Dynamic Island State Management
+  const [currentSceneName, setCurrentSceneName] = useState<string | null>('default')
+  const [currentMode, setCurrentMode] = useState<IslandMode>(IslandMode.DEFAULT)
+  const transitionModeRef = useRef<string | null>(null)
+  const previousSceneRef = useRef<IslandScene<string> | null>(null)
+  const [isPillActive, setIsPillActive] = useState(false)
+  const [expansionStage, setExpansionStage] = useState<0 | 1 | 2>(0) // 0: collapsed, 1: todo only, 2: full
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Next steps functionality from momentum design
   const [nextSteps, setNextSteps] = useState(currentGrant?.nextSteps || [])
   const [newStep, setNewStep] = useState("")
   const [showSuggested, setShowSuggested] = useState(true)
+
+  // Scene definitions for dynamic island
+  const scenes: IslandScene<string>[] = [
+    {
+      name: 'todoOnly',
+      mode: IslandMode.TODO_ONLY,
+      content: (
+        <div className="flex items-center justify-between w-full px-4">
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+              <CheckCircle2 className="h-3 w-3 text-white" />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-white">Tasks</span>
+              <span className="text-xs text-white/70">{nextSteps.filter(s => s.completed).length}/{nextSteps.length}</span>
+            </div>
+          </div>
+          <div className="flex items-center">
+            <ChevronDown className="h-4 w-4 text-white/60" />
+          </div>
+        </div>
+      ),
+    },
+    {
+      name: 'fullExpanded',
+      mode: IslandMode.FULL_EXPANDED,
+      left: (
+        <div className="flex items-center gap-3">
+          <div className="w-7 h-7 bg-white/20 rounded-full flex items-center justify-center">
+            <Target className="h-3.5 w-3.5 text-white" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-white">Strategy</p>
+            <p className="text-xs text-white/70 truncate max-w-[120px]">{currentGrant?.playbook}</p>
+          </div>
+        </div>
+      ),
+      right: (
+          <div className="flex items-center gap-3">
+          <div className="w-7 h-7 bg-white/20 rounded-full flex items-center justify-center">
+            <CheckCircle2 className="h-3.5 w-3.5 text-white" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-white">Tasks</p>
+            <p className="text-xs text-white/70">{nextSteps.filter(s => s.completed).length}/{nextSteps.length}</p>
+          </div>
+        </div>
+      ),
+    },
+  ]
+
+  // Handle scene transitions
+  useEffect(() => {
+    const previousScene = previousSceneRef.current
+    previousSceneRef.current = scenes.find(({ name }) => name === currentSceneName) ?? null
+
+    transitionModeRef.current = `from${previousScene?.mode ?? IslandMode.DEFAULT
+      }To${scenes.find(({ name }) => name === currentSceneName)?.mode ?? IslandMode.DEFAULT}`
+
+    if (currentSceneName === null) {
+      setCurrentMode(IslandMode.DEFAULT)
+      return
+    }
+
+    const currentScene = scenes.find(({ name }) => name === currentSceneName)
+    setCurrentMode(currentScene?.mode ?? IslandMode.DEFAULT)
+  }, [currentSceneName])
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, isTyping])
 
   const checklistItems = getChecklistItems(grantId)
   const eligibilityRules = getEligibilityRules(grantId)
@@ -342,6 +461,241 @@ export default function GrantDetailPage() {
       setMessages((prev) => [...prev, assistantMessage])
       setIsTyping(false)
     }, 1500)
+  }
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files
+    if (files) {
+      const newFiles = Array.from(files)
+      setUploadedFiles(prev => [...prev, ...newFiles])
+      setIsUploading(true)
+      
+      // Simulate file upload process
+      setTimeout(() => {
+        setIsUploading(false)
+      }, 1000)
+    }
+  }
+
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
+  // Main Dynamic Island Component
+  const DynamicIsland = () => {
+    const currentScene = scenes.find(({ name }) => name === currentSceneName)
+
+    if (currentSceneName !== null && currentScene === undefined && currentSceneName !== 'default') {
+      throw Error(`Could not find the scene. SceneName: ${currentSceneName}`)
+    }
+
+    // Main island size animation with three stages
+    const dynamicIslandStyles = useSpring(
+      currentMode === IslandMode.FULL_EXPANDED
+        ? {
+            config: {
+              tension: 250,
+              mass: 1.5,
+            },
+            width: 400,
+            height: 80,
+            borderRadius: '40px',
+            delay: transitionModeRef.current === 'fromTodoOnlyToFullExpanded' ? 50 : 0,
+          }
+        : currentMode === IslandMode.TODO_ONLY
+        ? {
+            config: {
+              tension: 300,
+              mass: 1.2,
+            },
+            width: 280,
+            height: 50,
+            borderRadius: '25px',
+            delay: transitionModeRef.current === 'fromDefaultToTodoOnly' ? 0 : 100,
+          }
+        : {
+            config: { ...flatMove },
+            width: 200,
+            height: 44,
+            borderRadius: '22px',
+            delay: transitionModeRef.current === 'fromTodoOnlyToDefault' ? 0 : 100,
+          }
+    )
+
+    // Content fade animation with blur effects
+    const contentStyles = useSpring(
+      currentMode === IslandMode.FULL_EXPANDED
+        ? {
+            config: {
+              duration: 200,
+            },
+            opacity: 1,
+            filter: 'blur(0px)',
+            transform: 'scale(1)',
+            delay: 100 + (transitionModeRef.current === 'fromTodoOnlyToFullExpanded' ? 50 : 0),
+          }
+        : currentMode === IslandMode.TODO_ONLY
+        ? {
+            config: {
+              duration: 150,
+            },
+            opacity: 1,
+            filter: 'blur(0px)',
+            transform: 'scale(1)',
+            delay: 50,
+          }
+        : {
+            config: {
+              duration: 150,
+            },
+            opacity: 0,
+            filter: 'blur(5px)',
+            transform: 'scale(0.9)',
+          }
+    )
+
+    // Default pill content animation
+    const pillContentStyles = useSpring(
+      currentMode === IslandMode.DEFAULT
+        ? {
+            config: {
+              duration: 200,
+            },
+            opacity: 1,
+            transform: 'scale(1)',
+          }
+        : {
+            config: {
+              duration: 150,
+            },
+            opacity: 0,
+            transform: 'scale(0.95)',
+          }
+    )
+
+    return (
+      <div className="relative">
+        {/* Dynamic Island Container */}
+        <animated.div
+          className="relative overflow-hidden cursor-pointer bg-black shadow-2xl"
+          style={dynamicIslandStyles}
+          onClick={handlePillClick}
+        >
+          {/* Default Mode (Collapsed Pill) */}
+          {currentMode === IslandMode.DEFAULT && (
+            <animated.div
+              className="flex items-center justify-between w-full h-full px-4"
+              style={{
+                ...pillContentStyles,
+                transform: isPillActive ? 'scale(0.95)' : 'scale(1)',
+                transition: 'transform 0.15s ease-out'
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+                  <Building2 className="h-3 w-3 text-white" />
+                </div>
+                <span className="text-sm font-medium text-white truncate max-w-[100px]">{currentGrant?.title}</span>
+              </div>
+              
+              {/* Circular Progress */}
+              <div className="relative w-6 h-6">
+                {(() => {
+                  const progress = nextSteps.filter(s => s.completed).length / Math.max(nextSteps.length, 1)
+                  const percentage = Math.round(progress * 100)
+                  const progressColor = percentage >= 80 ? '#10B981' : percentage >= 50 ? '#F59E0B' : '#EF4444'
+                  
+                  return (
+                    <>
+                      <svg className="w-6 h-6 transform -rotate-90" viewBox="0 0 24 24">
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="rgba(255,255,255,0.2)"
+                          strokeWidth="2"
+                          fill="none"
+                        />
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke={progressColor}
+                          strokeWidth="2"
+                          fill="none"
+                          strokeDasharray={`${2 * Math.PI * 10}`}
+                          strokeDashoffset={`${2 * Math.PI * 10 * (1 - progress)}`}
+                          className="transition-all duration-300 ease-out"
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-[10px] font-medium" style={{ color: progressColor }}>
+                          {percentage}
+                        </span>
+                      </div>
+                    </>
+                  )
+                })()}
+              </div>
+            </animated.div>
+          )}
+
+          {/* Todo Only Mode */}
+          {currentMode === IslandMode.TODO_ONLY && (
+            <animated.div
+              className="flex items-center w-full h-full"
+              style={contentStyles}
+            >
+              {currentScene?.mode === IslandMode.TODO_ONLY && 'content' in currentScene && currentScene.content}
+            </animated.div>
+          )}
+
+          {/* Full Expanded Mode */}
+          {currentMode === IslandMode.FULL_EXPANDED && (
+            <animated.div
+              className="flex items-center justify-between w-full h-full px-6"
+              style={contentStyles}
+            >
+              <div className="flex items-center gap-4">
+                {currentScene?.mode === IslandMode.FULL_EXPANDED && 'left' in currentScene && currentScene.left}
+              </div>
+              <div className="flex items-center gap-4">
+                {currentScene?.mode === IslandMode.FULL_EXPANDED && 'right' in currentScene && currentScene.right}
+              </div>
+            </animated.div>
+          )}
+        </animated.div>
+      </div>
+    )
+  }
+
+  const handlePillClick = () => {
+    setIsPillActive(true)
+
+    // Cycle through expansion stages: 0 -> 1 -> 2 -> 0
+    const nextStage = (expansionStage + 1) % 3
+    setExpansionStage(nextStage as 0 | 1 | 2)
+
+    // Set scene based on expansion stage
+    switch (nextStage) {
+      case 0:
+        setCurrentSceneName('default')
+        setCurrentMode(IslandMode.DEFAULT)
+        break
+      case 1:
+        setCurrentSceneName('todoOnly')
+        setCurrentMode(IslandMode.TODO_ONLY)
+        break
+      case 2:
+        setCurrentSceneName('fullExpanded')
+        setCurrentMode(IslandMode.FULL_EXPANDED)
+        break
+    }
+
+    // Reset active state after animation
+    setTimeout(() => {
+      setIsPillActive(false)
+    }, 150)
   }
 
   const generateResponse = (input: string): string => {
@@ -430,10 +784,6 @@ export default function GrantDetailPage() {
               <Target className="h-5 w-5 text-gray-600" />
               <span className="font-medium text-gray-900">Grant Navigator</span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <Filter className="h-4 w-4" />
-              <span>Filter</span>
-            </div>
             <div className="flex items-center gap-2 text-sm text-gray-500 min-w-0 flex-1">
               <Building2 className="h-4 w-4 flex-shrink-0" />
               <span className="flex-shrink-0">Grants</span>
@@ -443,10 +793,6 @@ export default function GrantDetailPage() {
               <span className="text-gray-900 font-medium truncate">GRANT-{grantId}</span>
             </div>
           </div>
-          <Button variant="ghost" size="sm" className="text-gray-500">
-            <Clock className="h-4 w-4 mr-2" />
-            Snooze
-          </Button>
         </div>
       </header>
 
@@ -514,154 +860,56 @@ export default function GrantDetailPage() {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 overflow-y-auto min-w-0">
-          <div className="p-8 max-w-4xl mx-auto">
-            {/* Grant header */}
-            <div className="mb-8">
-              <div className="flex items-center gap-3 mb-4">
-                <Building2 className="h-5 w-5 text-gray-500" />
-                <span className="text-sm font-medium text-gray-900">Playbook</span>
-                <Badge variant="secondary" className="bg-gray-100 text-gray-700 border-0">
-                  {currentGrant?.playbook || "Grant Strategy"}
-                </Badge>
-              </div>
-
-              <div className="space-y-3 text-sm text-gray-700 leading-relaxed">
-                <p className="break-words">{currentGrant?.description}</p>
-                <ul className="space-y-2">
-                  {currentGrant?.criteria?.map((criterion, index) => (
-                    <li key={index} className="flex items-start gap-2">
-                      <span className="text-gray-400 flex-shrink-0 mt-1">•</span>
-                      <span className="break-words">{criterion}</span>
-                    </li>
-                  ))}
-                </ul>
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Dynamic Island - Always Visible */}
+          <div className="flex-shrink-0 p-8 pt-2 pb-0">
+            <div className="max-w-5xl mx-auto">
+              <div className="flex justify-center">
+                <DynamicIsland />
               </div>
             </div>
+          </div>
 
-            {/* Next steps section */}
-            <div className="space-y-6">
-              <div className="flex items-center gap-2">
-                <div className="p-1 bg-gray-100 rounded">
-                  <CheckCircle2 className="h-4 w-4 text-gray-600" />
-                </div>
-                <h2 className="text-lg font-medium text-gray-900">Next steps</h2>
-              </div>
-
-              <div className="space-y-3">
-                {nextSteps.map((step) => (
-                  <div
-                    key={step.id}
-                    className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-200 group"
-                  >
-                    <button onClick={() => handleStepToggle(step.id)} className="mt-0.5 transition-colors duration-200">
-                      {step.completed ? (
-                        <CheckCircle2 className="h-5 w-5 text-green-500" />
-                      ) : (
-                        <Circle className="h-5 w-5 text-gray-400 group-hover:text-gray-600" />
-                      )}
-                    </button>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm break-words ${step.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
-                        {step.text}
-                      </p>
-                      {step.note && <p className="text-xs text-gray-500 mt-1 italic break-words">{step.note}</p>}
+          {/* Scrollable Chat Area */}
+          <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <div className="p-8 pb-6 max-w-5xl mx-auto">
+              {/* Empty State - Centered when no conversation */}
+              {messages.length === 0 && (
+                <div className="flex items-center justify-center h-128">
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <MessageCircle className="h-8 w-8 text-gray-600" />
                     </div>
-                    {step.dueDate && <span className="text-xs text-gray-500 mt-0.5">{step.dueDate}</span>}
-                  </div>
-                ))}
-
-                {/* Add new step */}
-                <div className="flex items-center gap-3 p-3 rounded-lg border border-dashed border-gray-300 hover:border-gray-400 transition-colors duration-200">
-                  <Plus className="h-5 w-5 text-gray-400" />
-                  <Input
-                    value={newStep}
-                    onChange={(e) => setNewStep(e.target.value)}
-                    placeholder="Add next step..."
-                    className="border-0 p-0 h-auto text-sm placeholder:text-gray-400 focus-visible:ring-0"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        addNewStep()
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Commented out suggested steps and additional grant information */}
-              {/*
-              
-              {showSuggested && currentGrant?.suggestedSteps && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="p-1 bg-gray-100 rounded">
-                        <Plus className="h-4 w-4 text-gray-600" />
-                      </div>
-                      <span className="text-sm font-medium text-gray-900">Add all suggested</span>
-                    </div>
-                    <button
-                      onClick={() => setShowSuggested(false)}
-                      className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
-                    >
-                      <span className="text-sm mr-2">Remove all</span>
-                      <X className="h-4 w-4 inline" />
-                    </button>
-                  </div>
-
-                  <div className="space-y-3">
-                    {currentGrant.suggestedSteps.map((step, index) => (
-                      <div
-                        key={index}
-                        className="flex items-start gap-3 p-3 rounded-lg border border-dashed border-blue-200 bg-blue-50/30 hover:bg-blue-50/50 transition-colors duration-200 group cursor-pointer"
-                        onClick={() => addSuggestedStep(step)}
-                      >
-                        <div className="p-1 bg-white rounded border border-blue-200">
-                          <Plus className="h-3 w-3 text-blue-600" />
-                        </div>
-                        <p className="text-sm text-gray-700 flex-1 break-words">{step}</p>
-                        <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                          <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="pt-4 border-t border-gray-200">
-                    <button className="text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200">
-                      Previous steps • {checklistItems.length} ▼
-                    </button>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Ask about this grant</h3>
+                    <p className="text-gray-600 text-sm">Get personalized guidance from our AI assistant</p>
                   </div>
                 </div>
               )}
 
-              
-
-              {/* Chat Interface - Integrated with Background */}
-              <div className="mt-8">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Ask about this grant</h3>
-                
-                {/* Messages */}
-                <div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
+              {/* Chat Messages - Only show when there are messages */}
+              {messages.length > 0 && (
+                <div className="space-y-4">
                   {messages.map((message) => (
                     <div
                       key={message.id}
                       className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
                     >
-                      <div
-                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                          message.sender === "user"
-                            ? "bg-blue-600 text-white"
-                            : "bg-gray-100 text-gray-900"
-                        }`}
-                      >
-                        <p className="text-sm">{message.content}</p>
-                      </div>
+                      {message.sender === "user" ? (
+                        <div className={`max-w-xs lg:max-w-md px-4 py-2 bg-blue-600 text-white ${
+                          message.content.split('\n').length === 1 && message.content.length < 50 
+                            ? 'rounded-full' 
+                            : 'rounded-2xl'
+                        }`}>
+                          <p className="text-sm">{message.content}</p>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-900">{message.content}</p>
+                      )}
                     </div>
                   ))}
                   {isTyping && (
                     <div className="flex justify-start">
-                      <div className="bg-gray-100 text-gray-900 px-4 py-2 rounded-lg">
+                      <div className="bg-gray-100 text-gray-900 px-4 py-2 rounded-full">
                         <div className="flex space-x-1">
                           <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                           <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></div>
@@ -671,18 +919,50 @@ export default function GrantDetailPage() {
                     </div>
                   )}
                 </div>
+              )}
+              {/* Scroll anchor */}
+              <div ref={messagesEndRef} />
+            </div>
+          </div>
 
-                {/* Input - Integrated with Background */}
-                <div className="relative">
-                  <div className={`relative bg-gray-100 border border-gray-300 focus-within:border-gray-400 transition-all duration-200 ${
+          {/* Floating Input - Fixed at Bottom */}
+          <div className="sticky bottom-0 bg-gray-50 p-4">
+            {/* Subtle gradient overlay */}
+            <div className="absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-gray-50 to-gray-50 pointer-events-none"></div>
+
+            <div className="max-w-5xl mx-auto">
+              <div className="relative">
+                  <div className={`relative bg-gray-100 transition-all duration-200 ${
                     inputMessage.split('\n').length === 1 && inputMessage.length < 50 ? 'rounded-full' : 'rounded-2xl'
                   }`}>
+                    {/* File Upload Button - Left Side */}
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
+                      <input
+                        type="file"
+                        id="file-upload"
+                        multiple
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
+                      />
+                      <label
+                        htmlFor="file-upload"
+                        className="cursor-pointer w-8 h-8 flex items-center justify-center transition-all duration-200 hover:scale-105"
+                      >
+                        {isUploading ? (
+                          <div className="h-4 w-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Plus className="h-5 w-5 text-gray-500 hover:text-blue-600 transition-colors duration-200" />
+                        )}
+                      </label>
+                    </div>
+
                     <Textarea
                       placeholder="Ask about eligibility, requirements, or next steps..."
                       value={inputMessage}
                       onChange={(e) => setInputMessage(e.target.value)}
                       rows={inputMessage.split('\n').length > 1 ? Math.min(inputMessage.split('\n').length, 4) : 1}
-                      className="w-full bg-transparent border-0 focus:ring-0 focus:outline-none resize-none placeholder:text-gray-500 text-gray-900 py-3 px-5"
+                      className="w-full bg-transparent border-0 focus:ring-0 focus:outline-none resize-none placeholder:text-gray-500 text-gray-900 py-3 pl-12 pr-5"
                       style={{ 
                         minHeight: '48px', 
                         maxHeight: '120px',
@@ -694,38 +974,36 @@ export default function GrantDetailPage() {
                       onBlur={(e) => e.target.style.outline = 'none'}
                       onKeyDown={handleKeyPress}
                     />
+
+                    {/* Uploaded Files Display */}
+                    {uploadedFiles.length > 0 && (
+                      <div className="px-3 py-2 bg-gray-50">
+                        <div className="flex flex-wrap gap-2">
+                          {uploadedFiles.map((file, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                            >
+                              <File className="h-4 w-4 text-gray-500" />
+                              <span className="text-gray-700 truncate max-w-[150px]">
+                                {file.name}
+                              </span>
+                              <button
+                                onClick={() => removeFile(index)}
+                                className="text-gray-400 hover:text-red-500 transition-colors"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     
                     {/* Controls - Position based on content */}
                     {inputMessage.split('\n').length > 2 ? (
-                      // Expanded mode: Controls below text
-                      <div className="absolute bottom-2 right-2 flex items-center gap-2">
-                        {/* Circular Progress */}
-                        <div className="w-6 h-6 relative">
-                          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 24 24">
-                            <circle
-                              cx="12"
-                              cy="12"
-                              r="8"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              fill="none"
-                              className="text-gray-300"
-                            />
-                            <circle
-                              cx="12"
-                              cy="12"
-                              r="8"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              fill="none"
-                              strokeDasharray={`${2 * Math.PI * 8}`}
-                              strokeDashoffset={`${2 * Math.PI * 8 * (1 - Math.min(inputMessage.length, 1000) / 1000)}`}
-                              className="text-blue-500 transition-all duration-300"
-                            />
-                          </svg>
-                        </div>
-                        
-                        {/* Send Button */}
+                      // Expanded mode: Send Button only
+                      <div className="absolute bottom-2 right-2">
                         <button
                           onClick={sendMessage}
                           disabled={!inputMessage.trim() || isTyping}
@@ -734,40 +1012,13 @@ export default function GrantDetailPage() {
                           {isTyping ? (
                             <div className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
                           ) : (
-                            <Send className="h-3 w-3 text-white" />
+                            <ArrowUp className="h-4 w-4 text-white" />
                           )}
                         </button>
                       </div>
                     ) : (
-                      // Single line mode: Controls on right side
-                      <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
-                        {/* Circular Progress */}
-                        <div className="w-6 h-6 relative">
-                          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 24 24">
-                            <circle
-                              cx="12"
-                              cy="12"
-                              r="8"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              fill="none"
-                              className="text-gray-300"
-                            />
-                            <circle
-                              cx="12"
-                              cy="12"
-                              r="8"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              fill="none"
-                              strokeDasharray={`${2 * Math.PI * 8}`}
-                              strokeDashoffset={`${2 * Math.PI * 8 * (1 - Math.min(inputMessage.length, 1000) / 1000)}`}
-                              className="text-blue-500 transition-all duration-300"
-                            />
-                          </svg>
-                        </div>
-                        
-                        {/* Send Button */}
+                      // Single line mode: Send Button only
+                      <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
                         <button
                           onClick={sendMessage}
                           disabled={!inputMessage.trim() || isTyping}
@@ -776,7 +1027,7 @@ export default function GrantDetailPage() {
                           {isTyping ? (
                             <div className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
                           ) : (
-                            <Send className="h-3 w-3 text-white" />
+                            <ArrowUp className="h-4 w-4 text-white" />
                           )}
                         </button>
                       </div>
@@ -788,6 +1039,5 @@ export default function GrantDetailPage() {
           </div>
         </div>
       </div>
-    </div>
   )
 }

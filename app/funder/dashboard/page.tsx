@@ -239,8 +239,6 @@ export default function FunderDashboard() {
   const [dragActive, setDragActive] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
   const [formData, setFormData] = useState({
-    grantTitle: "",
-    description: "",
     url: "",
     file: null as File | null,
   })
@@ -408,7 +406,7 @@ export default function FunderDashboard() {
     console.log("Saving grant with tags and checklist")
     // Reset form and go back to overview
     setIsProcessed(false)
-    setFormData({ grantTitle: "", description: "", url: "", file: null })
+    setFormData({ url: "", file: null })
     setUploadedFiles([])
     setActiveTab("overview")
   }
@@ -765,33 +763,6 @@ export default function FunderDashboard() {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Basic Information */}
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="grantTitle">Grant Title *</Label>
-                      <Input
-                        id="grantTitle"
-                        placeholder="Enter the grant title"
-                        value={formData.grantTitle}
-                        onChange={(e) => handleInputChange("grantTitle", e.target.value)}
-                        className="border-gray-200 focus:border-blue-500"
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="description">Brief Description</Label>
-                      <Textarea
-                        id="description"
-                        placeholder="Provide a brief description of the grant..."
-                        value={formData.description}
-                        onChange={(e) => handleInputChange("description", e.target.value)}
-                        rows={3}
-                        className="border-gray-200 focus:border-blue-500"
-                      />
-                    </div>
-                  </div>
-
                   {/* Upload Method Selection */}
                   <Tabs value={uploadMethod} onValueChange={(value) => setUploadMethod(value as "file" | "url")}>
                     <TabsList className="grid w-full grid-cols-2">
@@ -914,7 +885,6 @@ export default function FunderDashboard() {
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                     disabled={
                       isProcessing ||
-                      !formData.grantTitle ||
                       (uploadMethod === "file" && !formData.file) ||
                       (uploadMethod === "url" && !formData.url)
                     }
