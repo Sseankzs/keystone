@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
-  Building2, Users, TrendingUp, Eye, MessageCircle, Plus, Settings, Upload, LinkIcon, FileText, Tag,
+  Users, TrendingUp, Eye, MessageCircle, Plus, Upload, LinkIcon, FileText, Tag,
   CheckCircle, ArrowRight, X, Loader2, Target, DollarSign, Calendar,
   Search, Filter, Download, MoreHorizontal, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, Minus, Loader,
   CircleCheck, XCircle
@@ -23,186 +23,211 @@ import { cn } from "@/lib/utils"
 // Mock data
 const ACTIVE_GRANTS = [
   {
-    id: "1",
+    grant_id: "1",
     title: "Tech Innovation Grant 2024",
-    status: "Active",
+    issuer: "Innovation Foundation",
+    country: "United States",
+    status: "open",
+    deadline: "2024-03-15",
+    amount_min: 500000,
+    amount_max: 2500000,
+    sector_tags: ["Technology", "AI/ML", "Innovation", "SMEs"],
     applications: 45,
-    budget: "$2,500,000",
-    allocated: "$750,000",
-    deadline: "March 15, 2024",
-    tags: ["Technology", "AI/ML", "Innovation"],
+    allocated: 750000,
   },
   {
-    id: "2",
+    grant_id: "2",
     title: "Green Energy Initiative",
-    status: "Active",
+    issuer: "Clean Energy Fund",
+    country: "United States",
+    status: "open",
+    deadline: "2024-04-30",
+    amount_min: 100000,
+    amount_max: 1000000,
+    sector_tags: ["Clean Energy", "Sustainability", "Environment", "Green Tech"],
     applications: 23,
-    budget: "$1,000,000",
-    allocated: "$200,000",
-    deadline: "April 30, 2024",
-    tags: ["Clean Energy", "Sustainability", "Environment"],
+    allocated: 200000,
   },
   {
-    id: "3",
+    grant_id: "3",
     title: "Healthcare Innovation Fund",
-    status: "Draft",
+    issuer: "HealthTech Ventures",
+    country: "United States",
+    status: "upcoming",
+    deadline: "2024-06-01",
+    amount_min: 200000,
+    amount_max: 3000000,
+    sector_tags: ["Healthcare", "MedTech", "Innovation", "Biotech"],
     applications: 0,
-    budget: "$3,000,000",
-    allocated: "$0",
-    deadline: "June 1, 2024",
-    tags: ["Healthcare", "MedTech", "Innovation"],
+    allocated: 0,
   },
 ]
 
-// Comprehensive mock data for applications
-const ALL_APPLICATIONS = [
+// Comprehensive mock data for SME profiles
+const ALL_SME_PROFILES = [
   {
-    id: "1",
-    companyName: "AI Solutions Inc",
-    grantTitle: "Tech Innovation Grant 2024",
-    amount: "$250,000",
-    status: "Under Review",
-    submittedDate: "2024-02-15",
-    score: 85,
+    company_id: "1",
+    name: "AI Solutions Inc",
     sector: "Technology",
-    stage: "Series A",
-    location: "San Francisco, CA",
-    employees: "25-50",
+    state: "California",
+    headcount: 35,
+    years_op: 3,
+    revenue_myr: 2.5,
+    certs: ["ISO 27001", "SOC 2", "AWS Certified"],
+    profile_last_updated: "2024-02-20T10:30:00Z",
+    grant_id: "1",
+    application_status: "Under Review",
+    application_date: "2024-02-15",
+    score: 85,
     priority: "High",
     reviewer: "John Smith",
-    lastActivity: "2024-02-20",
+    last_activity: "2024-02-20",
     documents: 8,
-    chatMessages: 12,
+    chat_messages: 12,
   },
   {
-    id: "2",
-    companyName: "GreenTech Startup",
-    grantTitle: "Green Energy Initiative",
-    amount: "$150,000",
-    status: "Approved",
-    submittedDate: "2024-02-10",
-    score: 92,
+    company_id: "2",
+    name: "GreenTech Startup",
     sector: "Clean Energy",
-    stage: "Seed",
-    location: "Austin, TX",
-    employees: "10-25",
+    state: "Texas",
+    headcount: 18,
+    years_op: 2,
+    revenue_myr: 1.2,
+    certs: ["ISO 14001", "LEED Certified"],
+    profile_last_updated: "2024-02-18T14:20:00Z",
+    grant_id: "2",
+    application_status: "Approved",
+    application_date: "2024-02-10",
+    score: 92,
     priority: "Medium",
     reviewer: "Sarah Johnson",
-    lastActivity: "2024-02-18",
+    last_activity: "2024-02-18",
     documents: 6,
-    chatMessages: 8,
+    chat_messages: 8,
   },
   {
-    id: "3",
-    companyName: "MedDevice Co",
-    grantTitle: "Tech Innovation Grant 2024",
-    amount: "$300,000",
-    status: "Rejected",
-    submittedDate: "2024-02-08",
-    score: 65,
+    company_id: "3",
+    name: "MedDevice Co",
     sector: "Healthcare",
-    stage: "Series B",
-    location: "Boston, MA",
-    employees: "50-100",
+    state: "Massachusetts",
+    headcount: 75,
+    years_op: 8,
+    revenue_myr: 15.8,
+    certs: ["FDA Approved", "ISO 13485", "CE Mark"],
+    profile_last_updated: "2024-02-12T09:15:00Z",
+    grant_id: "1",
+    application_status: "Rejected",
+    application_date: "2024-02-08",
+    score: 65,
     priority: "Low",
     reviewer: "Mike Chen",
-    lastActivity: "2024-02-12",
+    last_activity: "2024-02-12",
     documents: 10,
-    chatMessages: 5,
+    chat_messages: 5,
   },
   {
-    id: "4",
-    companyName: "DataFlow Analytics",
-    grantTitle: "Tech Innovation Grant 2024",
-    amount: "$180,000",
-    status: "Under Review",
-    submittedDate: "2024-02-18",
-    score: 78,
+    company_id: "4",
+    name: "DataFlow Analytics",
     sector: "Technology",
-    stage: "Seed",
-    location: "Seattle, WA",
-    employees: "5-10",
+    state: "Washington",
+    headcount: 8,
+    years_op: 1,
+    revenue_myr: 0.8,
+    certs: ["AWS Certified", "Google Cloud"],
+    profile_last_updated: "2024-02-21T16:45:00Z",
+    grant_id: "1",
+    application_status: "Under Review",
+    application_date: "2024-02-18",
+    score: 78,
     priority: "High",
     reviewer: "John Smith",
-    lastActivity: "2024-02-21",
+    last_activity: "2024-02-21",
     documents: 7,
-    chatMessages: 15,
+    chat_messages: 15,
   },
   {
-    id: "5",
-    companyName: "EcoMaterials Corp",
-    grantTitle: "Green Energy Initiative",
-    amount: "$220,000",
-    status: "Pending Review",
-    submittedDate: "2024-02-19",
-    score: 0,
+    company_id: "5",
+    name: "EcoMaterials Corp",
     sector: "Clean Energy",
-    stage: "Pre-seed",
-    location: "Denver, CO",
-    employees: "1-5",
+    state: "Colorado",
+    headcount: 3,
+    years_op: 1,
+    revenue_myr: 0.3,
+    certs: ["ISO 9001"],
+    profile_last_updated: "2024-02-19T11:30:00Z",
+    grant_id: "2",
+    application_status: "Pending Review",
+    application_date: "2024-02-19",
+    score: 0,
     priority: "Medium",
     reviewer: null,
-    lastActivity: "2024-02-19",
+    last_activity: "2024-02-19",
     documents: 5,
-    chatMessages: 0,
+    chat_messages: 0,
   },
   {
-    id: "6",
-    companyName: "HealthTech Innovations",
-    grantTitle: "Healthcare Innovation Fund",
-    amount: "$400,000",
-    status: "Under Review",
-    submittedDate: "2024-02-12",
-    score: 88,
+    company_id: "6",
+    name: "HealthTech Innovations",
     sector: "Healthcare",
-    stage: "Series A",
-    location: "New York, NY",
-    employees: "25-50",
+    state: "New York",
+    headcount: 42,
+    years_op: 4,
+    revenue_myr: 8.2,
+    certs: ["HIPAA Compliant", "ISO 27001", "FDA Approved"],
+    profile_last_updated: "2024-02-20T13:20:00Z",
+    grant_id: "3",
+    application_status: "Under Review",
+    application_date: "2024-02-12",
+    score: 88,
     priority: "High",
     reviewer: "Sarah Johnson",
-    lastActivity: "2024-02-20",
+    last_activity: "2024-02-20",
     documents: 12,
-    chatMessages: 20,
+    chat_messages: 20,
   },
   {
-    id: "7",
-    companyName: "AgriTech Solutions",
-    grantTitle: "Green Energy Initiative",
-    amount: "$120,000",
-    status: "Approved",
-    submittedDate: "2024-02-05",
-    score: 90,
+    company_id: "7",
+    name: "AgriTech Solutions",
     sector: "Agriculture",
-    stage: "Seed",
-    location: "Chicago, IL",
-    employees: "10-25",
+    state: "Illinois",
+    headcount: 15,
+    years_op: 3,
+    revenue_myr: 1.8,
+    certs: ["Organic Certified", "USDA Approved"],
+    profile_last_updated: "2024-02-15T08:45:00Z",
+    grant_id: "2",
+    application_status: "Approved",
+    application_date: "2024-02-05",
+    score: 90,
     priority: "Medium",
     reviewer: "Mike Chen",
-    lastActivity: "2024-02-15",
+    last_activity: "2024-02-15",
     documents: 6,
-    chatMessages: 10,
+    chat_messages: 10,
   },
   {
-    id: "8",
-    companyName: "FinTech Pro",
-    grantTitle: "Tech Innovation Grant 2024",
-    amount: "$350,000",
-    status: "Rejected",
-    submittedDate: "2024-02-03",
-    score: 58,
+    company_id: "8",
+    name: "FinTech Pro",
     sector: "Financial Services",
-    stage: "Series B",
-    location: "Miami, FL",
-    employees: "50-100",
+    state: "Florida",
+    headcount: 85,
+    years_op: 6,
+    revenue_myr: 12.5,
+    certs: ["PCI DSS", "SOC 2", "ISO 27001"],
+    profile_last_updated: "2024-02-10T15:30:00Z",
+    grant_id: "1",
+    application_status: "Rejected",
+    application_date: "2024-02-03",
+    score: 58,
     priority: "Low",
     reviewer: "John Smith",
-    lastActivity: "2024-02-10",
+    last_activity: "2024-02-10",
     documents: 9,
-    chatMessages: 3,
+    chat_messages: 3,
   },
 ]
 
-const RECENT_APPLICATIONS = ALL_APPLICATIONS.slice(0, 3)
+const RECENT_SME_PROFILES = ALL_SME_PROFILES.slice(0, 3)
 
 const STATS = {
   totalGrants: 8,
@@ -215,7 +240,7 @@ const STATS = {
 
 export default function FunderDashboard() {
   const [activeTab, setActiveTab] = useState("overview")
-  const [applications, setApplications] = useState(ALL_APPLICATIONS)
+  const [smeProfiles, setSmeProfiles] = useState(ALL_SME_PROFILES)
   const [selectedApplications, setSelectedApplications] = useState<string[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
@@ -241,6 +266,15 @@ export default function FunderDashboard() {
   const [formData, setFormData] = useState({
     url: "",
     file: null as File | null,
+    title: "",
+    issuer: "",
+    country: "",
+    amount_min: "",
+    amount_max: "",
+    deadline: "",
+    sector_tags: [] as string[],
+    eligibility_rules: [] as Array<{key: string, value: string}>,
+    required_documents: [] as string[],
   })
 
   // Auto-generated content
@@ -314,32 +348,47 @@ export default function FunderDashboard() {
     console.log("Saving grant with tags and checklist")
     // Reset form and go back to overview
     setIsProcessed(false)
-    setFormData({ url: "", file: null })
+    setFormData({ 
+      url: "", 
+      file: null,
+      title: "",
+      issuer: "",
+      country: "",
+      amount_min: "",
+      amount_max: "",
+      deadline: "",
+      sector_tags: [],
+      eligibility_rules: [],
+      required_documents: [],
+    })
     setUploadedFiles([])
     setActiveTab("overview")
   }
 
-  // Filter and sort applications
-  const filteredApplications = applications
-    .filter((app) => {
-      const matchesSearch = app.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           app.grantTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           app.sector.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesStatus = statusFilter === "all" || app.status === statusFilter
-      const matchesGrant = grantFilter === "all" || app.grantTitle === grantFilter
-      const matchesCategory = categoryFilter === "all" || app.sector.toLowerCase() === categoryFilter.toLowerCase()
+  // Filter and sort SME profiles
+  const filteredSmeProfiles = smeProfiles
+    .filter((profile) => {
+      const grant = ACTIVE_GRANTS.find(g => g.grant_id === profile.grant_id)
+      const grantTitle = grant?.title || `Grant ${profile.grant_id}`
+      const matchesSearch = profile.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           grantTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           profile.sector.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           profile.state.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesStatus = statusFilter === "all" || profile.application_status === statusFilter
+      const matchesGrant = grantFilter === "all" || grantTitle === grantFilter
+      const matchesCategory = categoryFilter === "all" || profile.sector.toLowerCase() === categoryFilter.toLowerCase()
       return matchesSearch && matchesStatus && matchesGrant && matchesCategory
     })
     .sort((a, b) => {
       let aValue = a[sortBy as keyof typeof a]
       let bValue = b[sortBy as keyof typeof b]
       
-      if (sortBy === "submittedDate" || sortBy === "lastActivity") {
+      if (sortBy === "application_date" || sortBy === "last_activity" || sortBy === "profile_last_updated") {
         aValue = new Date(aValue as string).getTime()
         bValue = new Date(bValue as string).getTime()
-      } else if (sortBy === "amount") {
-        aValue = Number.parseInt((aValue as string).replace(/[$,]/g, ""))
-        bValue = Number.parseInt((bValue as string).replace(/[$,]/g, ""))
+      } else if (sortBy === "revenue_myr" || sortBy === "headcount" || sortBy === "years_op") {
+        aValue = Number(aValue)
+        bValue = Number(bValue)
       }
       
       if (sortOrder === "asc") {
@@ -350,20 +399,23 @@ export default function FunderDashboard() {
     })
 
   // Pagination
-  const totalPages = Math.ceil(filteredApplications.length / itemsPerPage)
-  const paginatedApplications = filteredApplications.slice(
+  const totalPages = Math.ceil(filteredSmeProfiles.length / itemsPerPage)
+  const paginatedSmeProfiles = filteredSmeProfiles.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   )
 
   // Get unique grants for filter
-  const uniqueGrants = Array.from(new Set(applications.map(app => app.grantTitle)))
+  const uniqueGrants = Array.from(new Set(smeProfiles.map(profile => {
+    const grant = ACTIVE_GRANTS.find(g => g.grant_id === profile.grant_id)
+    return grant?.title || `Grant ${profile.grant_id}`
+  })))
 
   // Handle selection
-  const handleSelectApplication = (id: string) => {
+  const handleSelectSmeProfile = (id: string) => {
     setSelectedApplications(prev => 
       prev.includes(id) 
-        ? prev.filter(appId => appId !== id)
+        ? prev.filter(profileId => profileId !== id)
         : [...prev, id]
     )
   }
@@ -383,9 +435,9 @@ export default function FunderDashboard() {
 
   const handleSelectAll = () => {
     setSelectedApplications(
-      selectedApplications.length === paginatedApplications.length
+      selectedApplications.length === paginatedSmeProfiles.length
         ? []
-        : paginatedApplications.map(app => app.id)
+        : paginatedSmeProfiles.map(profile => profile.company_id)
     )
   }
 
@@ -426,7 +478,7 @@ export default function FunderDashboard() {
       case "Under Review":
         return "bg-blue-100 text-blue-800 border-blue-200"
       case "Pending Review":
-        return "bg-orange-100 text-orange-800 border-orange-200"
+        return "bg-blue-100 text-blue-800 border-blue-200"
       case "Approved":
         return "bg-green-100 text-green-800 border-green-200"
       case "Rejected":
@@ -449,26 +501,31 @@ export default function FunderDashboard() {
     }
   }
 
+  const getSectorColor = (sector: string) => {
+    switch (sector) {
+      case 'Technology':
+        return 'bg-blue-100 text-blue-800'
+      case 'Clean Energy':
+        return 'bg-green-100 text-green-800'
+      case 'Healthcare':
+        return 'bg-red-100 text-red-800'
+      case 'Agriculture':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'Financial Services':
+        return 'bg-purple-100 text-purple-800'
+      case 'Manufacturing':
+        return 'bg-blue-100 text-blue-800'
+      case 'Education':
+        return 'bg-indigo-100 text-indigo-800'
+      case 'Retail':
+        return 'bg-pink-100 text-pink-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header - Notion Style */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Building2 className="h-8 w-8 text-gray-900" />
-              <h1 className="text-2xl font-bold text-gray-900">Funder Dashboard</h1>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" className="border-gray-300 text-gray-700 hover:bg-gray-50">
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
       <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
@@ -476,42 +533,36 @@ export default function FunderDashboard() {
           <p className="text-gray-600 text-lg">Manage your grants and review applications from promising startups.</p>
         </div>
 
-        {/* Stats Cards */}
+        {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
-            <div className="text-sm text-gray-600 font-medium mb-2">Total Grants</div>
+          <div className="text-left">
             <div className="text-2xl font-bold text-gray-900">{STATS.totalGrants}</div>
-            <div className="text-xs text-gray-500 mt-1">All time</div>
+            <div className="text-sm text-gray-600">Total Grants</div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
-            <div className="text-sm text-gray-600 font-medium mb-2">Active Grants</div>
+          <div className="text-left">
             <div className="text-2xl font-bold text-gray-900">{STATS.activeGrants}</div>
-            <div className="text-xs text-gray-500 mt-1">Currently open</div>
+            <div className="text-sm text-gray-600">Active Grants</div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
-            <div className="text-sm text-gray-600 font-medium mb-2">Applications</div>
+          <div className="text-left">
             <div className="text-2xl font-bold text-gray-900">{STATS.totalApplications}</div>
-            <div className="text-xs text-gray-500 mt-1">Total received</div>
+            <div className="text-sm text-gray-600">Applications</div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
-            <div className="text-sm text-gray-600 font-medium mb-2">Approval Rate</div>
+          <div className="text-left">
             <div className="text-2xl font-bold text-gray-900">{STATS.approvalRate}%</div>
-            <div className="text-xs text-gray-500 mt-1">Last 6 months</div>
+            <div className="text-sm text-gray-600">Approval Rate</div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
-            <div className="text-sm text-gray-600 font-medium mb-2">Total Funded</div>
+          <div className="text-left">
             <div className="text-2xl font-bold text-gray-900">{STATS.totalFunded}</div>
-            <div className="text-xs text-gray-500 mt-1">This year</div>
+            <div className="text-sm text-gray-600">Total Funded</div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
-            <div className="text-sm text-gray-600 font-medium mb-2">Avg Processing</div>
+          <div className="text-left">
             <div className="text-2xl font-bold text-gray-900">{STATS.avgProcessingTime}</div>
-            <div className="text-xs text-gray-500 mt-1">Review time</div>
+            <div className="text-sm text-gray-600">Avg Processing</div>
           </div>
         </div>
 
@@ -532,19 +583,20 @@ export default function FunderDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {ACTIVE_GRANTS.filter((grant) => grant.status === "Active").map((grant) => {
-                    const allocationPercentage =
-                      (Number.parseInt(grant.allocated.replace(/[$,]/g, "")) /
-                        Number.parseInt(grant.budget.replace(/[$,]/g, ""))) *
-                      100
+                  {ACTIVE_GRANTS.filter((grant) => grant.status === "open").map((grant) => {
+                    const allocationPercentage = grant.amount_max > 0 ? (grant.allocated / grant.amount_max) * 100 : 0
 
                     return (
-                      <div key={grant.id} className="border border-border rounded-lg p-4">
+                      <div key={grant.grant_id} className="border border-border rounded-lg p-4">
                         <div className="flex items-start justify-between mb-3">
                           <div>
                             <h3 className="font-semibold">{grant.title}</h3>
                             <div className="flex items-center gap-2 mt-1">
-                              {grant.tags.map((tag) => (
+                              <span className="text-xs bg-gray-100 px-2 py-1 rounded">{grant.country}</span>
+                              <span className="text-xs text-gray-500">{grant.issuer}</span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-2">
+                              {grant.sector_tags.map((tag) => (
                                 <Badge key={tag} variant="secondary" className="text-xs">
                                   {tag}
                                 </Badge>
@@ -552,19 +604,21 @@ export default function FunderDashboard() {
                             </div>
                           </div>
                           <div className="text-right">
-                            <Badge className={`${getStatusColor(grant.status)} whitespace-nowrap`}>{grant.status}</Badge>
+                            <Badge className={`${getStatusColor(grant.status === 'open' ? 'Active' : grant.status === 'closed' ? 'Closed' : 'Draft')} whitespace-nowrap`}>
+                              {grant.status === 'open' ? 'Open' : grant.status === 'closed' ? 'Closed' : 'Upcoming'}
+                            </Badge>
                             <div className="text-sm text-muted-foreground mt-1">{grant.applications} applications</div>
                           </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4 mb-3">
                           <div>
-                            <div className="text-sm text-muted-foreground">Total Budget</div>
-                            <div className="font-semibold">{grant.budget}</div>
+                            <div className="text-sm text-muted-foreground">Funding Range</div>
+                            <div className="font-semibold">${grant.amount_min.toLocaleString()} - ${grant.amount_max.toLocaleString()}</div>
                           </div>
                           <div>
                             <div className="text-sm text-muted-foreground">Allocated</div>
-                            <div className="font-semibold">{grant.allocated}</div>
+                            <div className="font-semibold">${grant.allocated.toLocaleString()}</div>
                           </div>
                         </div>
 
@@ -578,13 +632,15 @@ export default function FunderDashboard() {
 
                         <div className="flex items-center justify-between">
                           <div className="text-sm text-muted-foreground">
-                            <strong>Deadline:</strong> {grant.deadline}
+                            <strong>Deadline:</strong> {new Date(grant.deadline).toLocaleDateString()}
                           </div>
                           <div className="flex gap-2">
-                            <Button variant="outline" size="sm">
-                              <Eye className="mr-2 h-4 w-4" />
-                              View
-                            </Button>
+                            <Link href={`/funder/grant/${grant.grant_id}`}>
+                              <Button variant="outline" size="sm">
+                                <Eye className="mr-2 h-4 w-4" />
+                                View
+                              </Button>
+                            </Link>
                             <Button size="sm">
                               <Users className="mr-2 h-4 w-4" />
                               Applications
@@ -598,38 +654,47 @@ export default function FunderDashboard() {
               </CardContent>
             </Card>
 
-            {/* Recent Applications */}
+            {/* Recent SME Profiles */}
             <Card>
               <CardHeader>
-                <CardTitle>Recent Applications</CardTitle>
-                <CardDescription>Latest applications requiring your attention</CardDescription>
+                <CardTitle>Recent SME Profiles</CardTitle>
+                <CardDescription>Latest SME profiles requiring your attention</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {RECENT_APPLICATIONS.slice(0, 3).map((app) => (
-                    <div key={app.id} className="flex items-center justify-between border border-border rounded-lg p-4">
-                      <div>
-                        <h3 className="font-semibold">{app.companyName}</h3>
-                        <p className="text-sm text-muted-foreground">{app.grantTitle}</p>
-                        <div className="text-lg font-bold text-primary mt-1">{app.amount}</div>
-                      </div>
-                      <div className="text-right">
-                        <Badge className={`${getStatusColor(app.status)} whitespace-nowrap`}>{app.status}</Badge>
-                        <div className="text-sm text-muted-foreground mt-1">Score: {app.score}%</div>
-                        <div className="text-sm text-muted-foreground">{app.submittedDate}</div>
-                        <div className="flex gap-2 mt-2">
-                          <Button variant="outline" size="sm">
-                            <Eye className="mr-2 h-4 w-4" />
-                            Review
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <MessageCircle className="mr-2 h-4 w-4" />
-                            Chat
-                          </Button>
+                  {RECENT_SME_PROFILES.slice(0, 3).map((profile) => {
+                    const grant = ACTIVE_GRANTS.find(g => g.grant_id === profile.grant_id)
+                    return (
+                      <div key={profile.company_id} className="flex items-center justify-between border border-border rounded-lg p-4">
+                        <div>
+                          <h3 className="font-semibold">{profile.name}</h3>
+                          <p className="text-sm text-muted-foreground">{grant?.title || `Grant ${profile.grant_id}`}</p>
+                          <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                            <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getSectorColor(profile.sector)}`}>
+                              {profile.sector}
+                            </span>
+                            <span>{profile.state}</span>
+                            <span>{profile.headcount} employees</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <Badge className={`${getStatusColor(profile.application_status)} whitespace-nowrap`}>{profile.application_status}</Badge>
+                          <div className="text-sm text-muted-foreground mt-1">Score: {profile.score}%</div>
+                          <div className="text-sm text-muted-foreground">{profile.application_date}</div>
+                          <div className="flex gap-2 mt-2">
+                            <Button variant="outline" size="sm">
+                              <Eye className="mr-2 h-4 w-4" />
+                              Review
+                            </Button>
+                            <Button variant="outline" size="sm">
+                              <MessageCircle className="mr-2 h-4 w-4" />
+                              Chat
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </CardContent>
             </Card>
@@ -659,7 +724,7 @@ export default function FunderDashboard() {
 
           <TabsContent value="upload" className="space-y-6">
             {/* Upload Form */}
-            <Card className="max-w-4xl">
+            <Card className="max-w-4xl mx-auto">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Upload className="h-5 w-5 text-blue-600" />
@@ -937,26 +1002,28 @@ export default function FunderDashboard() {
                   size="sm" 
                   className="bg-blue-600 hover:bg-blue-700 text-white"
                   onClick={() => {
-                    // Add new application logic
-                    const newApp = {
-                      id: String(ALL_APPLICATIONS.length + 1),
-                      companyName: `New Company ${ALL_APPLICATIONS.length + 1}`,
-                      grantTitle: "Tech Innovation Grant 2024",
-                      amount: "$100,000",
-                      status: "Pending Review",
-                      submittedDate: new Date().toISOString().split('T')[0],
-                      score: 0,
+                    // Add new SME profile logic
+                    const newProfile = {
+                      company_id: String(ALL_SME_PROFILES.length + 1),
+                      name: `New Company ${ALL_SME_PROFILES.length + 1}`,
                       sector: "Technology",
-                      stage: "Seed",
-                      location: "San Francisco, CA",
-                      employees: "1-10",
+                      state: "California",
+                      headcount: 5,
+                      years_op: 1,
+                      revenue_myr: 0.5,
+                      certs: ["ISO 9001"],
+                      profile_last_updated: new Date().toISOString(),
+                      grant_id: "1",
+                      application_status: "Pending Review",
+                      application_date: new Date().toISOString().split('T')[0],
+                      score: 0,
                       priority: "Medium",
                       reviewer: null,
-                      lastActivity: new Date().toISOString().split('T')[0],
+                      last_activity: new Date().toISOString().split('T')[0],
                       documents: 3,
-                      chatMessages: 0,
+                      chat_messages: 0,
                     }
-                    setApplications(prev => [...prev, newApp])
+                    setSmeProfiles(prev => [...prev, newProfile])
                   }}
                 >
                   <Plus className="h-4 w-4 mr-2" />
@@ -1008,10 +1075,10 @@ export default function FunderDashboard() {
                 </Button>
               </div>
 
-              {/* Companies Table */}
+              {/* SME Profiles Table */}
               <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-200">
-                  <h2 className="text-lg font-semibold text-gray-900">Company ({filteredApplications.length})</h2>
+                  <h2 className="text-lg font-semibold text-gray-900">SME Profiles ({filteredSmeProfiles.length})</h2>
                 </div>
                 
                 <div className="overflow-x-auto">
@@ -1022,38 +1089,38 @@ export default function FunderDashboard() {
                         </th>
                         <th 
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
-                          onClick={() => handleSort("companyName")}
+                          onClick={() => handleSort("name")}
                         >
                           <div className="flex items-center gap-2">
                             Company
-                            {getSortIcon("companyName")}
+                            {getSortIcon("name")}
                           </div>
                         </th>
                         <th 
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
-                          onClick={() => handleSort("grantTitle")}
+                          onClick={() => handleSort("grant_id")}
                         >
                           <div className="flex items-center gap-2">
                             Grant
-                            {getSortIcon("grantTitle")}
+                            {getSortIcon("grant_id")}
                           </div>
                         </th>
                         <th 
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
-                          onClick={() => handleSort("amount")}
+                          onClick={() => handleSort("revenue_myr")}
                         >
                           <div className="flex items-center gap-2">
-                            Funding
-                            {getSortIcon("amount")}
+                            Revenue (MYR)
+                            {getSortIcon("revenue_myr")}
                           </div>
                         </th>
                         <th 
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
-                          onClick={() => handleSort("submittedDate")}
+                          onClick={() => handleSort("application_date")}
                         >
                           <div className="flex items-center gap-2">
-                            Created on
-                            {getSortIcon("submittedDate")}
+                            Applied on
+                            {getSortIcon("application_date")}
                           </div>
                         </th>
                         <th 
@@ -1061,22 +1128,23 @@ export default function FunderDashboard() {
                           onClick={() => handleSort("sector")}
                         >
                           <div className="flex items-center gap-2">
-                            Categories
+                            Sector & State
                             {getSortIcon("sector")}
                           </div>
                         </th>
                       </tr>
                     </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {/* Sample company rows using actual mock data */}
-                          {paginatedApplications.map((app, index) => {
-                            const isExpanded = expandedRows.has(app.id)
+                          {/* SME profile rows using actual mock data */}
+                          {paginatedSmeProfiles.map((profile, index) => {
+                            const isExpanded = expandedRows.has(profile.company_id)
+                            const grant = ACTIVE_GRANTS.find(g => g.grant_id === profile.grant_id)
                             return (
                               <>
-                                <tr key={app.id} className="hover:bg-gray-50">
+                                <tr key={profile.company_id} className="hover:bg-gray-50">
                                   <td className="px-6 py-4 whitespace-nowrap w-16">
                                     <button
-                                      onClick={() => toggleRowExpansion(app.id)}
+                                      onClick={() => toggleRowExpansion(profile.company_id)}
                                       className="w-6 h-6 border border-gray-300 rounded flex items-center justify-center hover:bg-gray-50 transition-colors"
                                     >
                                       {isExpanded ? (
@@ -1087,16 +1155,18 @@ export default function FunderDashboard() {
                                     </button>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm font-medium text-gray-900">{app.companyName}</div>
+                                    <div className="text-sm font-medium text-gray-900">{profile.name}</div>
+                                    <div className="text-xs text-gray-500">{profile.headcount} employees • {profile.years_op} years</div>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <span className="text-blue-500 font-medium">GRANT-{String(index + 1).padStart(2, '0')}</span>
+                                    <div className="text-blue-500 font-medium">GRANT-{profile.grant_id}</div>
+                                    <div className="text-xs text-gray-500 truncate max-w-[200px]">{grant?.title || `Grant ${profile.grant_id}`}</div>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {app.amount}
+                                    <div className="font-medium">MYR {profile.revenue_myr.toFixed(1)}M</div>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
-                                    {new Date(app.submittedDate).toLocaleDateString('en-US', {
+                                    {new Date(profile.application_date).toLocaleDateString('en-US', {
                                       year: 'numeric',
                                       month: 'short',
                                       day: 'numeric'
@@ -1104,11 +1174,11 @@ export default function FunderDashboard() {
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="flex flex-wrap gap-1">
-                                      <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                                        {app.sector}
+                                      <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getSectorColor(profile.sector)}`}>
+                                        {profile.sector}
                                       </span>
                                       <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                                        {app.stage}
+                                        {profile.state}
                                       </span>
                                     </div>
                                   </td>
@@ -1119,29 +1189,27 @@ export default function FunderDashboard() {
                                       <div className="space-y-4">
                                         <div className="grid grid-cols-2 gap-6">
                                           <div>
-                                            <h4 className="text-sm font-medium text-gray-900 mb-3">Company Details</h4>
+                                            <h4 className="text-sm font-medium text-gray-900 mb-3">Company Profile</h4>
                                             <div className="space-y-2 text-sm">
                                               <div className="flex justify-between">
-                                                <span className="text-gray-500">Location:</span>
-                                                <span className="text-gray-900">{app.location}</span>
+                                                <span className="text-gray-500">State:</span>
+                                                <span className="text-gray-900">{profile.state}</span>
                                               </div>
                                               <div className="flex justify-between">
-                                                <span className="text-gray-500">Employees:</span>
-                                                <span className="text-gray-900">{app.employees}</span>
+                                                <span className="text-gray-500">Headcount:</span>
+                                                <span className="text-gray-900">{profile.headcount} employees</span>
                                               </div>
                                               <div className="flex justify-between">
-                                                <span className="text-gray-500">Priority:</span>
-                                                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                                  app.priority === 'High' ? 'bg-red-100 text-red-800' :
-                                                  app.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                                                  'bg-green-100 text-green-800'
-                                                }`}>
-                                                  {app.priority}
-                                                </span>
+                                                <span className="text-gray-500">Years in Operation:</span>
+                                                <span className="text-gray-900">{profile.years_op} years</span>
                                               </div>
                                               <div className="flex justify-between">
-                                                <span className="text-gray-500">Reviewer:</span>
-                                                <span className="text-gray-900">{app.reviewer || 'Unassigned'}</span>
+                                                <span className="text-gray-500">Revenue:</span>
+                                                <span className="text-gray-900">MYR {profile.revenue_myr.toFixed(1)}M</span>
+                                              </div>
+                                              <div className="flex justify-between">
+                                                <span className="text-gray-500">Last Updated:</span>
+                                                <span className="text-gray-900">{new Date(profile.profile_last_updated).toLocaleDateString()}</span>
                                               </div>
                                             </div>
                                           </div>
@@ -1151,35 +1219,51 @@ export default function FunderDashboard() {
                                               <div className="flex justify-between">
                                                 <span className="text-gray-500">Status:</span>
                                                 <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                                  app.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                                                  app.status === 'Rejected' ? 'bg-red-100 text-red-800' :
-                                                  app.status === 'Under Review' ? 'bg-blue-100 text-blue-800' :
-                                                  app.status === 'Pending Review' ? 'bg-orange-100 text-orange-800' :
+                                                  profile.application_status === 'Approved' ? 'bg-green-100 text-green-800' :
+                                                  profile.application_status === 'Rejected' ? 'bg-red-100 text-red-800' :
+                                                  profile.application_status === 'Under Review' ? 'bg-blue-100 text-blue-800' :
+                                                  profile.application_status === 'Pending Review' ? 'bg-blue-100 text-blue-800' :
                                                   'bg-gray-100 text-gray-800'
                                                 }`}>
-                                                  {app.status}
+                                                  {profile.application_status}
                                                 </span>
                                               </div>
                                               <div className="flex justify-between">
                                                 <span className="text-gray-500">Score:</span>
-                                                <span className="text-gray-900">{app.score > 0 ? `${app.score}%` : 'Not scored'}</span>
+                                                <span className="text-gray-900">{profile.score > 0 ? `${profile.score}%` : 'Not scored'}</span>
                                               </div>
                                               <div className="flex justify-between">
-                                                <span className="text-gray-500">Documents:</span>
-                                                <span className="text-gray-900">{app.documents} files</span>
+                                                <span className="text-gray-500">Priority:</span>
+                                                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                                  profile.priority === 'High' ? 'bg-red-100 text-red-800' :
+                                                  profile.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                                                  'bg-green-100 text-green-800'
+                                                }`}>
+                                                  {profile.priority}
+                                                </span>
                                               </div>
                                               <div className="flex justify-between">
-                                                <span className="text-gray-500">Chat Messages:</span>
-                                                <span className="text-gray-900">{app.chatMessages}</span>
+                                                <span className="text-gray-500">Reviewer:</span>
+                                                <span className="text-gray-900">{profile.reviewer || 'Unassigned'}</span>
                                               </div>
                                             </div>
                                           </div>
                                         </div>
                                         <div className="pt-4 border-t border-gray-200">
+                                          <div className="mb-4">
+                                            <h4 className="text-sm font-medium text-gray-900 mb-2">Certifications</h4>
+                                            <div className="flex flex-wrap gap-1">
+                                              {profile.certs.map((cert, index) => (
+                                                <span key={index} className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
+                                                  {cert}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          </div>
                                           <div className="flex gap-2">
                                             <Button size="sm" variant="outline">
                                               <Eye className="w-4 h-4 mr-2" />
-                                              View Application
+                                              View Profile
                                             </Button>
                                             <Button size="sm" variant="outline">
                                               <MessageCircle className="w-4 h-4 mr-2" />
