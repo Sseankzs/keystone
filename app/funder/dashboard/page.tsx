@@ -301,14 +301,106 @@ export default function FunderDashboard() {
     e.preventDefault()
     setIsProcessing(true)
 
-    // TODO: Upload file/URL to backend for processing
-    console.log("Processing grant:", formData)
+    try {
+      console.log("Processing grant:", formData)
 
-    // Simulate processing time
-    setTimeout(() => {
+      // Prepare the API request payload
+      let requestPayload: any = {
+        title: formData.grantTitle,
+        issuer: "innovation-foundation-001", // Default funder ID - could be made dynamic later
+      }
+
+      let apiEndpoint = ""
+
+      if (uploadMethod === "file" && formData.file) {
+        // Convert file to base64 for PDF upload endpoint
+        const base64Content = await convertFileToBase64(formData.file)
+        requestPayload.pdf_content = base64Content
+        apiEndpoint = "https://b4lzhuuhk1.execute-api.ap-southeast-1.amazonaws.com/dev/upload-grant"
+        console.log("File converted to base64, size:", base64Content.length)
+      } else if (uploadMethod === "url" && formData.url) {
+        // Use URL for website scraping endpoint
+        requestPayload.url = formData.url
+        apiEndpoint = "https://bbivvo6xm4.execute-api.ap-southeast-1.amazonaws.com/dev/upload-grant-url"
+        console.log("Using URL scraping for:", formData.url)
+      } else {
+        console.error("No valid input method selected")
+        setIsProcessing(false)
+        return
+      }
+
+      console.log("Sending request to AWS API:", {
+        endpoint: apiEndpoint,
+        method: uploadMethod,
+        payload: uploadMethod === "file" 
+          ? {
+              ...requestPayload,
+              pdf_content: `${requestPayload.pdf_content?.substring(0, 100)}... (${requestPayload.pdf_content?.length} chars total)`
+            }
+          : requestPayload
+      })
+
+      // Make POST request to appropriate AWS Lambda endpoint
+      const response = await fetch(apiEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestPayload)
+      })
+
+      const result = await response.json()
+      
+      console.log("API Response Status:", response.status)
+      console.log("API Response Body:", result)
+
+      if (response.ok) {
+        console.log(`✅ Grant ${uploadMethod === "file" ? "uploaded" : "scraped"} successfully!`)
+        console.log("Grant ID:", result.grant_id)
+        console.log("Extracted Grant Data:", result.grant_data)
+        console.log("✅ Grant automatically saved to DynamoDB Grants table")
+        console.log(`📄 Content source: ${uploadMethod === "file" ? "PDF file" : "Website URL"}`)
+        
+        // Show success message to user
+        const sourceType = uploadMethod === "file" ? "PDF document" : "website"
+        alert(`Grant "${result.grant_data?.title || formData.grantTitle}" has been successfully created from ${sourceType} and saved!\n\nGrant ID: ${result.grant_id}`)
+        
+        // Auto-save is complete, reset form and return to overview
+        setFormData({ grantTitle: "", description: "", url: "", file: null })
+        setUploadedFiles([])
+        setActiveTab("overview")
+        
+        // Optionally show the processed results briefly before returning to overview
+        // setIsProcessed(true)
+      } else {
+        console.error("❌ API Error:", result)
+        alert(`Error: ${result.error || 'Unknown error occurred'}`)
+      }
+
+    } catch (error) {
+      console.error("❌ Network/Processing Error:", error)
+      alert(`Processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
       setIsProcessing(false)
-      setIsProcessed(true)
-    }, 3000)
+    }
+  }
+
+  // Helper function to convert file to base64
+  const convertFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        if (reader.result) {
+          // Remove the data URL prefix (e.g., "data:application/pdf;base64,")
+          const base64 = (reader.result as string).split(',')[1]
+          resolve(base64)
+        } else {
+          reject(new Error('Failed to read file'))
+        }
+      }
+      reader.onerror = () => reject(new Error('Error reading file'))
+      reader.readAsDataURL(file)
+    })
   }
 
   const handleSaveGrant = () => {
